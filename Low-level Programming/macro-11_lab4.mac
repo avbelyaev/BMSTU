@@ -1,0 +1,143 @@
+.globl mm
+.psect code,gbl,ro,i,con,rel
+mm::	
+			
+;=======PROLOGUE================
+			;stack:	ret,ac,av
+        mov R2, -(SP)
+        mov R3, -(SP)
+        mov R4, -(SP)
+        mov R5, -(SP)		;5,4,3,2,ret,ac,av
+
+        sub #102., SP           ;str[0]...[100],p,5,4,3,2,ret,ac,av
+        clrb (SP)		;str[0] = '\0'
+        mov 114.(SP), R3        ;R3 = av
+        mov 112.(SP), R4        ;R4 = ac
+        dec R4			;use 'ac' as 'i'. 'i' start value = 1
+        beq EXIT
+        tst (R3)+               ;av[i=1]
+        mov SP, R2
+        add #100., R2           ;R2 = &p
+
+;=======STARTLOOP===============
+
+loop:   mov (R3), R1            ;R1 = av[i]
+        call strtoi
+        mov R0, R5              ;n = strtoi (av[i], &p)
+
+        bpl ten			;if (NegFlag == 0)
+        clr R5
+        br A
+ten:    cmp R5, #12		;cmp 'n' and 10d
+        bmi A			;if (NegFlag == 1)
+        mov #12, R5		;R5 = n = 10
+
+;-------IF1---------------------
+
+A:      tst (R2)                ;sam p
+        beq VANO		;-VANO!-
+        mov (R2), R0
+        tstb (R0)		;
+        bne ELSE
+
+VANO:   tst (R3)+               ;new av[i]
+        dec R4                  ;i++ (still use 'ac' as 'i')
+
+;-------IF2---------------------
+
+        bne B			;if (ac != 0) goto B
+        mov #miss, -(SP)        ;miss,str[100],p,5,4,3,2...
+        call printf             ;printf( "\rMissing parameter!\r\n" )
+
+.psect data,rel,con,gbl,rw,d
+miss:   .byte 15,115,151,163,163,151,156,147,40,160,141,162,141,155,145,164,145,162,41,15,12,0
+        .even
+.psect code,rel,con,gbl,ro,i
+
+        tst (SP)+               ;str[100],p,5,4,3,2,ret,ac,av
+        br EXIT
+
+;-------XTRTOI------------------
+B:      mov (R3), R1            ;R1 = av[i]
+                                ;R2 = &p
+        call strtoi
+        mov R0, R1              ;R1 = c = strtoi( av[i], &p )
+        br C
+
+;-------ELSE--------------------
+ELSE:   movb @100.(SP), R1	;c = *p
+
+;-------STRNSET-----------------
+C:      mov R2, -(SP)           ;save &p
+        mov (R3), R0            ;R0 = av[i]
+                                ;R1 = c
+        mov R5, R2              ;R2 = n
+        call strnset            ;strnset( av[i], c, n )
+        mov (SP)+, R2		;str[100],p,5,4,3,2,ret,ac,av
+
+;-------STRCAT------------------
+        mov SP, R1
+        mov (R3)+, -(SP)	;av[i],str[100],p,5,4,3,2...
+        mov R1, -(SP)           ;&str[100],av[i],str[100],p,5,4,3,2...
+        call strcat             ;strcat( str, av[i] )
+
+        mov #fmt, 2(SP)		;&str[100],&fmt,str[100],p,5,4,3,2...
+        call strcat             ;strcat( str, "\r\n" )
+
+.psect data,gbl,rel,con,rw,d
+fmt:    .byte 15,12,0
+        .even
+.psect code,gbl,rel,con,i,ro
+
+        cmp (SP)+, (SP)+	;str[100],p,5,4,3,2,ret,ac,av
+        dec R4			;i++
+        bne loop
+
+;=======ENDLOOP=================
+
+EXIT:   mov SP, R0
+        mov R0, -(SP)		;&str[100],p,5,4,3,2...
+        mov #strend, -(SP)	;&strend,&str[100],str[100],p,5,4,3,2...
+        call printf             ;printf( "\r%s\r\n", str )
+
+.psect data,gbl,rel,con,d,rw
+strend: .byte 15,45,163,15,12,0
+.psect code,gbl,rel,con,i,ro
+
+        cmp (SP)+, (SP)+	;str[100],p,5,4,3,2,p,ret,ac,av
+
+;=======EPILOGUE================
+  
+        add #102., SP		;clean stack
+        mov (SP)+, R5
+        mov (SP)+, R4
+        mov (SP)+, R3
+        mov (SP)+, R2
+        mov #17., R0
+        return
+.end
+
+=====test1=====================
+.run main
+Argv: 011 110001
+111001
+Returned value is 17
+
+=====test2=====================
+.run main
+Argv: "011 110001"
+    110001
+Returned value is 17
+
+====launch:=====================
+macro func					;func -> func.asm
+macro xfunc1					;strtoi2 -> strtoi2.asm
+macro xfunc2					;strnset -> strnse.asm
+cc main						;main -> main.c
+asm main					;main.c -> main.asm
+clink main,func,xfunc1,xfunc2			;link them all and standard library to same library
+
+====with libraries=============		;<- better way!
+lib/create mylib xfunc1,xfunc2
+link/linklibrary:sy:cc/linklibrary:mylib main,func
+
