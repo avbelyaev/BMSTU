@@ -45,7 +45,8 @@
 
 
 (define (table-set! t i j value)
-  (vector-set! t (cell-index t i j) value))
+  (if (table? t)
+      (vector-set! t (cell-index t i j) value)))
 
 (display "table[2][3]=1337;") (newline)
 (table-set! t 2 3 1337)
@@ -54,7 +55,8 @@
 
 
 (define (table-ref t i j)
-  (vector-ref t (cell-index t i j)))
+  (if (table? t)
+      (vector-ref t (cell-index t i j))))
 
 (display "table[2][3]:")
 (table-ref t 2 3)
@@ -65,11 +67,11 @@
   (define (helper result-str symbols)
     (if (null? symbols)
         result-str
-        (helper (string-append result-str (car symbols) "-") (cdr symbols))))
+        (helper (string-append result-str (symbol->string (car symbols)) "-") (cdr symbols))))
   (let* ((concatenated-str (helper "" symbols))
          (removed-last-dash (substring concatenated-str 0 (- (string-length concatenated-str) 1))))
     (string->symbol removed-last-dash)))
   
-(define s (symbol-append "very" "long" "symbol"))
+(define s (symbol-append 'very 'long 'symbol))
 (display s)
 (symbol? s)
