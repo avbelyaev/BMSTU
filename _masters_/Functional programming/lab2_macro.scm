@@ -61,7 +61,8 @@
                             (>= index 0)
                             (char? value))
                        (list->string (list-ins (string->list seq) index value))
-                       #f))))
+                       #f))
+    (else #f)))
 
 (define suite
   (list
@@ -83,5 +84,8 @@
    (test (ins "123" 3 #\4) "1234")
    (test (ins "123" 1 0) #f)
    (test (ins "123" -1 #\0) #f)
-   (test (ins "123" 5 #\4) #f)))
+   (test (ins "123" 5 #\4) #f)
+
+   (test (ins '123 1 0) #f)))
 (run-tests suite)
+
