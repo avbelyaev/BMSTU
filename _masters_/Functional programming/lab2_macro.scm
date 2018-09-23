@@ -22,13 +22,16 @@
 ; ---------------- 4. ref -------------------
 (define (ref seq index)
   (cond
-    ((vector? seq) (if (< index (vector-length seq))
+    ((vector? seq) (if (and (< index (vector-length seq))
+                            (>= index 0))
                        (vector-ref seq index)
                        #f))
-        ((list? seq) (if (< index (length seq))
+        ((list? seq) (if (and (< index (length seq))
+                              (>= index 0))
                          (list-ref seq index)
                          #f))
-        ((string? seq) (if (< index (string-length seq))
+        ((string? seq) (if (and (< index (string-length seq))
+                                (>= index 0))
                            (string-ref seq index)
                            #f))
         (else #f)))
@@ -36,9 +39,16 @@
 (define suite
   (list
    (test (ref '(1 2 3) 1) 2)
+   (test (ref '(1 2 3) 3) #f)
+   (test (ref '(1 2 3) -1) #f)
+   
    (test (ref #(1 2 3) 1) 2)
+   (test (ref #(1 2 3) 3) #f)
+   (test (ref #(1 2 3) -1) #f)
+   
    (test (ref "123" 1) #\2)
-   (test (ref "123" 3) #f)))
+   (test (ref "123" 3) #f)
+   (test (ref "123" -1) #f)))
 (run-tests suite)
 
 
