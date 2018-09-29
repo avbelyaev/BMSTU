@@ -103,6 +103,7 @@
   (list
    (test (head '(+ 1 2)) 1)
    (test (head '(+ 3 2 1)) 3)
+   (test (head '(+ (+ a b) c)) '(+ a b))
    (test (head '(+ a b c)) 'a)))
 (run-tests suite)
 
@@ -125,14 +126,15 @@
 
 
 (define (bin-op? op-given exp)
-  (let ((op-actual (car exp))
-        (arg1 (cadr exp))
-        (arg2 (caddr exp)))
-    (and (list? exp)
-         (= 3 (length exp))
-         (eq? op-actual op-given)
-         (var? arg1)
-         (var? arg2))))
+  ;(newline)
+  ;(display "bin-op: ")
+  ;(write exp)
+  ;(newline)
+  (and (list? exp)
+       (= 3 (length exp))
+       (eq? op-given (car exp))
+       (or (var? (cadr exp)) (list? (cadr exp)))
+       (or (var? (caddr exp)) (list? (caddr exp)))))
 
 (define suite
   (list
@@ -149,6 +151,10 @@
 
   
 (define (addtail s)
+  ;(newline)
+  ;(display "adtail: ")
+  ;(write s)
+  ;(newline)
   (cond ((bin-op? '+ s) (caddr s))
         (else (cons '+ (tail s)))))
 
@@ -156,6 +162,7 @@
   (list
    (test (addtail '(+ 1 2)) '2)
    (test (addtail '(+ a b)) 'b)
+   (test (addtail '(+ (+ a b) c)) 'c)
    (test (addtail '(+ 1 2 3)) '(+ 2 3))
    (test (addtail '(+ 1 2 a)) '(+ 2 a))
    (test (addtail '(+ a b c)) '(+ b c))
@@ -207,15 +214,15 @@
 (define (make-sub a1 a2) ; (x y) => (- x y)
     (cond ((eq-number? a1 0) `(- 0 ,a2))
           ((eq-number? a2 0) a1)
-          ((and (number? a1) (number? a2)) (- 0 a1 a2))
+          ((and (number? a1) (number? a2)) (- a1 a2))
           (else `(- ,a1 ,a2))))
 
 (define suite
   (list
    (test (make-sub 'x 0) 'x)
    (test (make-sub 0 'x) '(- 0 x))
-   (test (make-sub 1 2) -3)
-   (test (make-sub 1 1) -2)
+   (test (make-sub 1 2) -1)
+   (test (make-sub 1 1) 0)
    (test (make-sub 'x 'x) '(- x x))
    (test (make-sub 'x 'y) '(- x y))
    ))
@@ -245,17 +252,27 @@
    (test (deriv 'x 'x) '1)
    (test (deriv 'y 'x) '0)
    (test (deriv '(+ x x) 'x) '2)
-   (test (deriv '(- x x) 'x) '-2)
+   (test (deriv '(- x x) 'x) '0)
    (test (deriv '(+ x y) 'x) '1)
+   (test (deriv '(- x y) 'x) '1)
    (test (deriv '(+ x y) 'y) '1)
+   (test (deriv '(- x y) 'y) '(- 0 1)) ; TODO fix
    (test (deriv '(+ x y) 'z) '0)
+   (test (deriv '(- x y) 'z) '(- 0 0)) ; TODO fix
 
    (test (deriv '(+ x x x) 'x) '3)
    (test (deriv '(+ x y z) 'z) '1)
    (test (deriv '(+ x z y) 'z) '1)
+   (test (deriv '(+ 1 2 z) 'z) '1)
 
    (test (deriv '(+ (+ x y) z) 'z) '1)
    (test (deriv '(+ (+ x y) (+ x y)) 'x) '2)
+   (test (deriv '(+ (- x y) (+ x y)) 'x) '2)
+   (test (deriv '(+ (- x y) (+ x y)) 'y) '(+ (- 0 1) 1)) ; TODO fix
+   (test (deriv '(+ (- x y) (- x y)) 'x) '2)
+   (test (deriv '(+ (- x y) (- x y)) 'y) '(+ (- 0 1) (- 0 1))) ; TODO fix
+   (test (deriv '(- (- x y) (- x y)) 'y) '(- (- 0 1) (- 0 1))) ; TODO fix
+   
    (test (deriv '(+ (+ x x x) (+ x x y)) 'x) '5)
    ))
 (run-tests suite)
@@ -274,6 +291,8 @@
    (test (df '(+ x 3) 'x) 1)
    (test (df '(+ y x) 'x) 1)
    (test (df '(+ x x) 'x) 2)
+   ;(test (deriv '(- x y) 'y) -1)
+   ;(test (deriv '(- x y) 'z) 0)
    
    (test (df '(+ x x x) 'x) 3)
    ))
