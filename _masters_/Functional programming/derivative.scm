@@ -186,6 +186,21 @@
 
 
 
+(define (multail s)
+  (cond ((bin-op? '* s) (caddr s))
+        (else (cons '* (tail s)))))
+  
+(define suite
+  (list
+   (test (multail '(* 1 2)) '2)
+   (test (multail '(* 1 2 3)) '(* 2 3))
+   (test (multail '(* a b)) 'b)
+   (test (multail '(* a b c)) '(* b c))
+   (test (multail '(* a b c d)) '(* b c d))))
+(run-tests suite)
+
+
+
 (define (make-add a1 a2) ; (x y) => (+ x y)
   ;(newline)
   ;(display "make-add a1:")
@@ -225,6 +240,30 @@
    (test (make-sub 1 1) 0)
    (test (make-sub 'x 'x) '(- x x))
    (test (make-sub 'x 'y) '(- x y))
+   (test (make-sub '(+ x y) 'y) '(- (+ x y) y))
+   ))
+(run-tests suite)
+
+
+
+(define (make-mul m1 m2) ; (x y) => (- x y)
+    (cond ((or (eq-number? m1 0)
+               (eq-number? m2 0)) 0)
+          ((eq-number? m1 1) m2)
+          ((eq-number? m2 1) m1)
+          ((and (number? m1) (number? m2)) (* m1 m2))
+          (else `(* ,m1 ,m2))))
+
+(define suite
+  (list
+   (test (make-mul 'x 0) 0)
+   (test (make-mul 0 'x) 0)
+   (test (make-mul 0 0) 0)
+   (test (make-mul 'x 1) 'x)
+   (test (make-mul 1 'x) 'x)
+   (test (make-mul 2 3) 6)
+   (test (make-mul 'x 'y) '(* x y))
+   (test (make-mul 'x '(* y z)) '(* x (* y z)))
    ))
 (run-tests suite)
 
@@ -244,7 +283,12 @@
                        ('+ (make-add (deriv (head f) var)
                                      (deriv (addtail f) var)))
                        ('- (make-sub (deriv (head f) var)
-                                     (deriv (subtail f) var))))))))
+                                     (deriv (subtail f) var)))
+                       ('* (make-add
+                            (make-mul (head f)
+                                      (deriv (multail f) var))
+                            (make-mul (deriv (head f) var)
+                                      (multail f)))))))))
 
 (define suite
   (list
@@ -252,13 +296,19 @@
    (test (deriv 'x 'x) '1)
    (test (deriv 'y 'x) '0)
    (test (deriv '(+ x x) 'x) '2)
-   (test (deriv '(- x x) 'x) '0)
    (test (deriv '(+ x y) 'x) '1)
-   (test (deriv '(- x y) 'x) '1)
    (test (deriv '(+ x y) 'y) '1)
-   (test (deriv '(- x y) 'y) '(- 0 1)) ; TODO fix
    (test (deriv '(+ x y) 'z) '0)
+   
+   (test (deriv '(- x x) 'x) '0)
+   (test (deriv '(- x y) 'x) '1)
+   (test (deriv '(- x y) 'y) '(- 0 1)) ; TODO fix
    (test (deriv '(- x y) 'z) '(- 0 0)) ; TODO fix
+
+   (test (deriv '(* x x) 'x) '(+ x x))
+   (test (deriv '(* x y) 'x) 'y)
+   (test (deriv '(* x 3) 'x) '3)
+   (test (deriv '(* 2 3) 'x) '0)
 
    (test (deriv '(+ x x x) 'x) '3)
    (test (deriv '(+ x y z) 'z) '1)
@@ -266,6 +316,7 @@
    (test (deriv '(+ 1 2 z) 'z) '1)
 
    (test (deriv '(+ (+ x y) z) 'z) '1)
+   (test (deriv '(* (* x y) (+ x 3)) 'x) '(+ (* x y) (* y (+ x 3))))
    (test (deriv '(+ (+ x y) (+ x y)) 'x) '2)
    (test (deriv '(+ (- x y) (+ x y)) 'x) '2)
    (test (deriv '(+ (- x y) (+ x y)) 'y) '(+ (- 0 1) 1)) ; TODO fix
