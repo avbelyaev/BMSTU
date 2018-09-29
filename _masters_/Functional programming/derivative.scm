@@ -198,6 +198,7 @@
    (test (make-add 1 2) 3)
    (test (make-add 'x 'x) '(+ x x))
    (test (make-add 'x 'y) '(+ x y))
+   (test (make-add '(+ x y) 'z) '(+ (+ x y) z))
    ))
 (run-tests suite)
 
