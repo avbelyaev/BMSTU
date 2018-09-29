@@ -108,23 +108,56 @@
 
 
 
-(define (addtail s)
+(define (tail s)
   (define (helper xs)
     (if (null? xs)
         '()
         (cond (car xs) (helper (cdr xs)))))
-  (cond ((and (= 3 (length s))
-              (number? (cadr s))
-              (number? (caddr s))) (+ (cadr s) (caddr s)))
-        ((and (= 3 (length s))
-              (var? (caddr s))) (caddr s))
-        (else (cons '+ (helper (cddr s))))))
+  (helper (cddr s)))
 
 (define suite
   (list
-   (test (addtail '(+ 1 2)) '3)
+   (test (tail '(+ 1 2)) '(2))
+   (test (tail '(+ 3 2 1)) '(2 1))
+   (test (tail '(+ a b c)) '(b c))))
+(run-tests suite)
+  
+
+
+(define (bin-op? op-given exp)
+  (let ((op-actual (car exp))
+        (arg1 (cadr exp))
+        (arg2 (caddr exp)))
+    (and (list? exp)
+         (= 3 (length exp))
+         (eq? op-actual op-given)
+         (var? arg1)
+         (var? arg2))))
+
+(define suite
+  (list
+   (test (bin-op? '+ '(+ 1 2)) #t)
+   (test (bin-op? '+ '(+ a b)) #t)
+   (test (bin-op? '- '(- 1 2)) #t)
+   (test (bin-op? '- '(- a b)) #t)
+   (test (bin-op? '+ '(+ 1 2 3)) #f)
+   (test (bin-op? '+ '(+ 1 2 a)) #f)
+   (test (bin-op? '- '(- 1 2 3)) #f)
+   ))
+(run-tests suite)
+
+
+  
+(define (addtail s)
+  (cond ((bin-op? '+ s) (caddr s))
+        (else (cons '+ (tail s)))))
+
+(define suite
+  (list
+   (test (addtail '(+ 1 2)) '2)
    (test (addtail '(+ a b)) 'b)
    (test (addtail '(+ 1 2 3)) '(+ 2 3))
+   (test (addtail '(+ 1 2 a)) '(+ 2 a))
    (test (addtail '(+ a b c)) '(+ b c))
    (test (addtail '(+ a b c d)) '(+ b c d))))
 (run-tests suite)
@@ -132,20 +165,16 @@
 
 
 (define (subtail s)
-  (cond ((and (= 3 (length s))
-              (number? (cadr s))
-              (number? (caddr s))) (- (cadr s) (caddr s)))
-        (else (let ((t (addtail s)))
-                (cond ((var? t) `(* -1 ,t))
-                      (else (cons '- (cdr t))))))))
+  (cond ((bin-op? '- s) (caddr s))
+        (else (cons '- (cons 0 (tail s))))))
   
 (define suite
   (list
-   (test (subtail '(- 1 2)) '-1)
-   (test (subtail '(- 1 2 3)) '(- 2 3))
-   (test (subtail '(- a b)) '(* -1 b))
-   (test (subtail '(- a b c)) '(- b c))
-   (test (subtail '(- a b c d)) '(- b c d))))
+   (test (subtail '(- 1 2)) '2)
+   (test (subtail '(- 1 2 3)) '(- 0 2 3))
+   (test (subtail '(- a b)) 'b)
+   (test (subtail '(- a b c)) '(- 0 b c))
+   (test (subtail '(- a b c d)) '(- 0 b c d))))
 (run-tests suite)
 
 
@@ -160,7 +189,7 @@
   (cond ((eq-number? a1 0) a2)
         ((eq-number? a2 0) a1)
         ((and (number? a1) (number? a2)) (+ a1 a2))
-        (else (list '+ a1 a2))))
+        (else `(+ ,a1 ,a2))))
 
 (define suite
   (list
@@ -175,16 +204,17 @@
 
 
 (define (make-sub a1 a2) ; (x y) => (- x y)
-    (cond ((eq-number? a1 0) `(* -1 ,a2))
+    (cond ((eq-number? a1 0) `(- 0 ,a2))
           ((eq-number? a2 0) a1)
-          ((and (number? a1) (number? a2)) (- a1 a2))
-          (else (list '- a1 a2))))
+          ((and (number? a1) (number? a2)) (- 0 a1 a2))
+          (else `(- ,a1 ,a2))))
 
 (define suite
   (list
    (test (make-sub 'x 0) 'x)
-   (test (make-sub 0 'x) '(* -1 x))
-   (test (make-sub 1 2) -1)
+   (test (make-sub 0 'x) '(- 0 x))
+   (test (make-sub 1 2) -3)
+   (test (make-sub 1 1) -2)
    (test (make-sub 'x 'x) '(- x x))
    (test (make-sub 'x 'y) '(- x y))
    ))
