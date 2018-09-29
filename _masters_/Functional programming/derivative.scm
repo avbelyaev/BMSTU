@@ -5,6 +5,15 @@
           (apply and-fold (cdr args))
           #f)))
 
+(define-syntax trace-ex
+  (syntax-rules ()
+    ((_ expr) (begin
+                  (write (quote expr))
+                  (display " => ")
+                  (write expr)
+                  (newline)
+                  expr))))
+
 (define ie (interaction-environment))
 
 ; ------- unit tests -----------
@@ -41,67 +50,6 @@
 
 (define (run-tests the-tests)
   (and-fold #t (map run-test the-tests)))
-
-
-
-
-; ------- factorize cubes and quads --------
-(display "=============== Factorize ===============")
-(newline)
-
-
-(define (is-var? var)
-  (or (symbol? var)
-      (number? var)
-      (list? var)))
-
-(define suite
-  (list
-   (test (is-var? 'a) #t)
-   (test (is-var? 12) #t)
-   (test (is-var? '(1 2 3)) #t)
-   (test (is-var? '(expt a 2)) #t)))
-(run-tests suite)
-
-
-
-; ------------- expt x n --------------
-(define (expt-x-n? expr n)
-  (and (list? expr)
-       (equal? (car expr) 'expt)
-       (is-var? (cadr expr))
-       (equal? n (caddr expr))))
-
-(define suite
-  (list
-   (test (expt-x-n? '(expt a 2) 2) #t)
-   (test (expt-x-n? '(expt b 3) 3) #t)
-   (test (expt-x-n? '(expt a 3) 0) #f)))
-(run-tests suite)
-
-
-
-(define (expt-x-2? expr)
-  (expt-x-n? expr 2))
-
-(define suite
-  (list
-   (test (expt-x-2? '(expt a 2)) #t)
-   (test (expt-x-2? '(expt b 2)) #t)
-   (test (expt-x-2? '(expt a 3)) #f)))
-(run-tests suite)
-
-
-
-(define (expt-x-3? expr)
-  (expt-x-n? expr 3))
-
-(define suite
-  (list
-   (test (expt-x-3? '(expt a 3)) #t)
-   (test (expt-x-3? '(expt b 3)) #t)
-   (test (expt-x-3? '(expt a 0)) #f)))
-(run-tests suite)
 
 
 
@@ -148,74 +96,71 @@
 
 
 
-(define (make-sum a b)
-  `(+ a b))
-
-(define (make-prod a b)
-  `(* a b))
-
-
-
-(define (sum? x)
-  (and (pair? x)
-       (eq? (car x) '+)))
-
-(define (prod? x)
-  (and (pair? x)
-       (eq? (car x) '*)))
-
-(define suite
-  (list
-   (test (sum? '(+ 1 2)) #t)
-   (test (sum? '(+ a b)) #t)
-   (test (sum? '(+ a b c)) #t)
-   (test (sum? '(* a b)) #f)
-
-   (test (prod? '(* 1 2)) #t)
-   (test (prod? '(* a b)) #t)
-   (test (prod? '(* a b c)) #t)
-   (test (prod? '(+ a b)) #f)))
-(run-tests suite)
-
-
-
-(define (addend s)
+(define (head s)
   (cadr s))
 
 (define suite
   (list
-   (test (addend '(+ 1 2)) 1)
-   (test (addend '(+ 3 2 1)) 3)
-   (test (addend '(+ a b c)) 'a)))
+   (test (head '(+ 1 2)) 1)
+   (test (head '(+ 3 2 1)) 3)
+   (test (head '(+ a b c)) 'a)))
 (run-tests suite)
 
 
 
-(define (augend s)
+(define (addtail s)
   (define (helper xs)
     (if (null? xs)
         '()
         (cond (car xs) (helper (cdr xs)))))
-  (if (= 3 (length s)) ; (+ 1 2) => 2
-      (caddr s)
-      (cons '+ (helper (cddr s)))))
+  (cond ((and (= 3 (length s))
+              (number? (cadr s))
+              (number? (caddr s))) (+ (cadr s) (caddr s)))
+        ((and (= 3 (length s))
+              (var? (caddr s))) (caddr s))
+        (else (cons '+ (helper (cddr s))))))
 
 (define suite
   (list
-   (test (augend '(+ 1 2)) '2)
-   (test (augend '(+ 1 2 3)) '(+ 2 3))
-   (test (augend '(+ a b c)) '(+ b c))
-   (test (augend '(+ a b c d)) '(+ b c d))))
+   (test (addtail '(+ 1 2)) '3)
+   (test (addtail '(+ a b)) 'b)
+   (test (addtail '(+ 1 2 3)) '(+ 2 3))
+   (test (addtail '(+ a b c)) '(+ b c))
+   (test (addtail '(+ a b c d)) '(+ b c d))))
 (run-tests suite)
 
 
 
+(define (subtail s)
+  (cond ((and (= 3 (length s))
+              (number? (cadr s))
+              (number? (caddr s))) (- (cadr s) (caddr s)))
+        (else (let ((t (addtail s)))
+                (cond ((var? t) `(* -1 ,t))
+                      (else (cons '- (cdr t))))))))
+  
+(define suite
+  (list
+   (test (subtail '(- 1 2)) '-1)
+   (test (subtail '(- 1 2 3)) '(- 2 3))
+   (test (subtail '(- a b)) '(* -1 b))
+   (test (subtail '(- a b c)) '(- b c))
+   (test (subtail '(- a b c d)) '(- b c d))))
+(run-tests suite)
 
-(define (make-add a1 a2)
-    (cond ((eq-number? a1 0) a2)
-          ((eq-number? a2 0) a1)
-          ((and (number? a1) (number? a2)) (+ a1 a2))
-          (else (list '+ a1 a2))))
+
+
+(define (make-add a1 a2) ; (x y) => (+ x y)
+  ;(newline)
+  ;(display "make-add a1:")
+  ;(write a1)
+  ;(display " a2:")
+  ;(write a2)
+  ;(newline)
+  (cond ((eq-number? a1 0) a2)
+        ((eq-number? a2 0) a1)
+        ((and (number? a1) (number? a2)) (+ a1 a2))
+        (else (list '+ a1 a2))))
 
 (define suite
   (list
@@ -229,14 +174,39 @@
 
 
 
+(define (make-sub a1 a2) ; (x y) => (- x y)
+    (cond ((eq-number? a1 0) `(* -1 ,a2))
+          ((eq-number? a2 0) a1)
+          ((and (number? a1) (number? a2)) (- a1 a2))
+          (else (list '- a1 a2))))
+
+(define suite
+  (list
+   (test (make-sub 'x 0) 'x)
+   (test (make-sub 0 'x) '(* -1 x))
+   (test (make-sub 1 2) -1)
+   (test (make-sub 'x 'x) '(- x x))
+   (test (make-sub 'x 'y) '(- x y))
+   ))
+(run-tests suite)
+
+
+
 (define (deriv f var)
+  ;(newline)
+  ;(display "deriv ")
+  ;(write f)
+  ;(display " ")
+  ;(write var)
+  ;(newline)
   (cond ((number? f) 0)
         ((var? f) (if (same-var? f var) 1 0))
         ((list f) (let ((op (car f)))
                      (case op
-                       ('+ (make-add (deriv (addend f) var)
-                                     (deriv (augend f) var)))
-                       ('- (make-sub f var)))))))
+                       ('+ (make-add (deriv (head f) var)
+                                     (deriv (addtail f) var)))
+                       ('- (make-sub (deriv (head f) var)
+                                     (deriv (subtail f) var))))))))
 
 (define suite
   (list
@@ -244,6 +214,7 @@
    (test (deriv 'x 'x) '1)
    (test (deriv 'y 'x) '0)
    (test (deriv '(+ x x) 'x) '2)
+   (test (deriv '(- x x) 'x) '-2)
    (test (deriv '(+ x y) 'x) '1)
    (test (deriv '(+ x y) 'y) '1)
    (test (deriv '(+ x y) 'z) '0)
