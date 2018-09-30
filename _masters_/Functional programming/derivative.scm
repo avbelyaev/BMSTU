@@ -102,9 +102,11 @@
 (define suite
   (list
    (test (head '(+ 1 2)) 1)
+   (test (head '(/ 2 3)) 2)
    (test (head '(+ 3 2 1)) 3)
    (test (head '(+ (+ a b) c)) '(+ a b))
-   (test (head '(+ a b c)) 'a)))
+   (test (head '(+ a b c)) 'a)
+   (test (head '(/ a b c)) 'a)))
 (run-tests suite)
 
 
@@ -119,6 +121,7 @@
 (define suite
   (list
    (test (tail '(+ 1 2)) '(2))
+   (test (tail '(/ 1 2)) '(2))
    (test (tail '(+ 3 2 1)) '(2 1))
    (test (tail '(+ a b c)) '(b c))))
 (run-tests suite)
@@ -201,6 +204,12 @@
 
 
 
+(define (divtail s)
+  (cond ((bin-op? '/ s) (caddr s))
+        (else (cons '/ (tail s)))))
+
+
+
 (define (make-add a1 a2) ; (x y) => (+ x y)
   ;(newline)
   ;(display "make-add a1:")
@@ -246,7 +255,7 @@
 
 
 
-(define (make-mul m1 m2) ; (x y) => (- x y)
+(define (make-mul m1 m2) ; (x y) => (* x y)
     (cond ((or (eq-number? m1 0)
                (eq-number? m2 0)) 0)
           ((eq-number? m1 1) m2)
@@ -264,6 +273,26 @@
    (test (make-mul 2 3) 6)
    (test (make-mul 'x 'y) '(* x y))
    (test (make-mul 'x '(* y z)) '(* x (* y z)))
+   ))
+(run-tests suite)
+
+
+
+(define (make-div m1 m2) ; (x y) => (/ x y)
+    (cond ((eq-number? m1 0) 0)
+          ((eq-number? m2 1) m1)
+          ((and (number? m1) (number? m2)) `(/ ,m1 ,m2)) ; do not count
+          (else `(/ ,m1 ,m2))))
+
+(define suite
+  (list
+   (test (make-div 1 1) 1)
+   (test (make-div 14 88) '(/ 14 88))
+   (test (make-div 'x 1) 'x)
+   (test (make-div 0 'x) 0)
+   (test (make-div 'x 'y) '(/ x y))
+   (test (make-div '(+ x y) 'y) '(/ (+ x y) y))
+   (test (make-div '(* x y) '(+ x 3)) '(/ (* x y) (+ x 3)))
    ))
 (run-tests suite)
 
@@ -288,7 +317,14 @@
                             (make-mul (head f)
                                       (deriv (multail f) var))
                             (make-mul (deriv (head f) var)
-                                      (multail f)))))))))
+                                      (multail f))))
+                       ('/ (make-div
+                            (make-sub
+                             (make-mul (deriv (head f) var)
+                                       (divtail f))
+                             (make-mul (head f)
+                                       (deriv (divtail f) var)))
+                            (make-mul (divtail f) (divtail f)))))))))
 
 (define suite
   (list
@@ -310,20 +346,25 @@
    (test (deriv '(* x 3) 'x) '3)
    (test (deriv '(* 2 3) 'x) '0)
 
+   (test (deriv '(/ 1 1) 'x) '(- 0 0)) ; TODO fix
+   (test (deriv '(/ x 1) 'x) '1)
+   (test (deriv '(/ x y) 'x) '(/ y (* y y))) ; TODO fix
+
    (test (deriv '(+ x x x) 'x) '3)
    (test (deriv '(+ x y z) 'z) '1)
    (test (deriv '(+ x z y) 'z) '1)
    (test (deriv '(+ 1 2 z) 'z) '1)
 
    (test (deriv '(+ (+ x y) z) 'z) '1)
-   (test (deriv '(* (* x y) (+ x 3)) 'x) '(+ (* x y) (* y (+ x 3))))
    (test (deriv '(+ (+ x y) (+ x y)) 'x) '2)
    (test (deriv '(+ (- x y) (+ x y)) 'x) '2)
    (test (deriv '(+ (- x y) (+ x y)) 'y) '(+ (- 0 1) 1)) ; TODO fix
    (test (deriv '(+ (- x y) (- x y)) 'x) '2)
    (test (deriv '(+ (- x y) (- x y)) 'y) '(+ (- 0 1) (- 0 1))) ; TODO fix
    (test (deriv '(- (- x y) (- x y)) 'y) '(- (- 0 1) (- 0 1))) ; TODO fix
-   
+   (test (deriv '(* (* x y) (+ x 3)) 'x) '(+ (* x y) (* y (+ x 3))))
+   (test (deriv '(/ (* x y) (+ x 3)) 'x) '(/ (- (* y (+ x 3)) (* x y)) (* (+ x 3) (+ x 3))))
+    
    (test (deriv '(+ (+ x x x) (+ x x y)) 'x) '5)
    ))
 (run-tests suite)
