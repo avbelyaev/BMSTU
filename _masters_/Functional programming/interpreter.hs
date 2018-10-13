@@ -23,32 +23,39 @@ isInteger s =
     in trace ("isInt=" ++ show res) $ res
 
 
-add :: [Int] ->Int
-add stack = trace ("add" ++ show (stack)) 
-                $ head stack + head (tail stack)
+-- stack grows to the left. that means a,b in (a - b) represented as [b a]
+doOp :: (Int -> Int -> Int) -> [Int] -> [Int]
+doOp op stack = res : modStack
+    where res = op (stack !! 1) (stack !! 0)
+          modStack = tail $ tail stack
 
+addOp env = doOp (+) (stack env)
+negOp stack = -1 * head stack : tail stack
 
 interp :: Env -> Env
-interp env = 
-    let cs = "curr:" ++ show (ws env !! counter env) ++ 
-             " ws:" ++ show (ws env) ++
-             " len=" ++ show (length (ws env)) ++
-             " exit=" ++ show (counter env == length (ws env) - 1) ++
-             " counter:" ++ show (counter env) ++
-             " stack:" ++ show (stack env) 
-        !current = trace cs $ ws env !! counter env -- force this fucker to evaluate
+interp e = 
+    let cs = "ws:" ++ show (ws e) ++
+             " len=" ++ show (length (ws e)) ++
+             " exit=" ++ show (counter e == length (ws e)) ++
+             " counter:" ++ show (counter e) ++
+             " stack:" ++ show (stack e) 
     in 
-        if (null $ ws env) || (counter env == length (ws env) - 1)
-        then env
-        else if isInteger current
-            then let !newElem = (read current :: Int)
-                in trace "int" $ interp env { stack = newElem : (stack env)
-                              , counter = counter env + 1 }
-            else let !res = case current of
-                            "+" -> add $ stack env
-                            _ -> 228
-                in trace "str" $ interp env { stack = res : (tail (tail (stack env)))
-                              , counter = counter env + 1 } 
+        if (null $ ws e) || (counter e == length (ws e))
+        then e
+        else let !current = trace cs $ ws e !! counter e -- force this fucker to evaluate
+            in if isInteger current
+                then let !newElem = (read current :: Int)
+                    in trace "int" $ interp e { stack = newElem : (stack e)
+                                                , counter = counter e + 1 }
+                else let !modStack = case current of
+                                "+"     -> addOp e
+                                "-"     -> doOp (-) (stack e) 
+                                "*"     -> doOp (*) (stack e)
+                                "/"     -> doOp (div) (stack e)
+                                "mod"   -> doOp (mod) (stack e)
+                                "neg"   -> negOp $ stack e
+                    in trace "str" $ interp e { stack = modStack
+                                                , counter = counter e + 1 } 
 
 
 
@@ -61,11 +68,8 @@ eva program initStack = interp env
 main = do
     print "start interpreting"
 
-    let x = (read "2" :: Int)
-    print x
-
     let prog = ": inc 1 + ; 1 inc ."
-    let p2 = "1 2 3 + 4 +"
+    let p2 = "1 1 + 1 - 4 * 2 / neg"
     let envres = eva p2 []
     print $ stack envres
 
