@@ -35,10 +35,10 @@ indexOfItem item xs =
 
 
 
--- stack grows to the left. that means a,b in (a - b) represented as [b a]
+-- basic ops
 doOp :: (Int -> Int -> Int) -> Env -> Env
 doOp operation e = e { stack = res : modStack, counter = counter e + 1 }
-    where res = operation (stack e !! 1) (stack e !! 0)
+    where res = operation (stack e !! 1) (stack e !! 0) -- stack grows to the left
           modStack = tail $ tail (stack e)
 
 negOp e = e { stack = modStack, counter = counter e + 1 }
@@ -48,17 +48,27 @@ negOp e = e { stack = modStack, counter = counter e + 1 }
 -- stack ops
 dropOp e = e { stack = tail (stack e), counter = counter e + 1 }
 
-swapOp e = e { stack = x : (y : restOfStack), counter = counter e + 1 }
-    where x = stack e !! 0
-          y = stack e !! 1
-          restOfStack = tail $ tail (stack e)
+swapOp e = e { stack = n2 : (n1 : restOfStack), counter = counter e + 1 }
+    where n2 = stack e !! 0 -- n2 is at the top of stack
+          n1 = stack e !! 1
+          restOfStack = tail $ tail (stack e) -- remove 2 values from top of stack
 
 dupOp e = e { stack = head (stack e) : (stack e), counter = counter e + 1 }
 
 
+-- comparison
+customTrue = -1 -- why, forth? just why?
+customFalse = 0
+
+boolOp operation e = e { stack = comparisonResult : restOfStack, counter = counter e + 1 }
+    where n2 = stack e !! 0 -- n2 is at the top of stack
+          n1 = stack e !! 1
+          comparisonResult = if operation n1 n2 then customTrue else customFalse
+          restOfStack = tail $ tail (stack e) -- remove 2 values from top of stack
 
 
 
+-- control-flow operations
 defineCustomFunc e = 
     let funcName = ws e !! (counter e + 1) -- func name goes after 'define'
         funcBodyStartIndex = counter e + 2 -- skip 'define', skip <name>
@@ -89,6 +99,22 @@ endCustomFunc e = e { counter = addrToReturn, retAddrs = modRetAddrs }
           !modRetAddrs = tail (retAddrs e) -- remove it
 
 
+-- determine, where to place counter - to 'if-block' or to 'else-block'
+startBranch e = 
+    let goToElseBlock = trace ("goToElse=" ++ show (customFalse == (head $ stack e)))
+            $ customFalse == (head $ stack e)
+    in 
+        if goToElseBlock
+        then let restOfProgram = slice (counter e) (length $ ws e) (ws e) -- remove everything to the left
+                 indexOfNearestEndif = indexOfItem "endif" restOfProgram
+             in e { counter = counter e + indexOfNearestEndif, stack = tail (stack e) }
+        else e { counter = counter e + 1, stack = tail (stack e) }
+
+
+skip e = e { counter = counter e + 1 }
+
+
+
 
 interp :: Env -> Env
 interp e = 
@@ -114,13 +140,22 @@ interp e =
                                 "mod"   -> doOp (mod) e
                                 "neg"   -> negOp e
 
+                                -- comparison
+                                "="     -> boolOp (==) e
+                                ">"     -> boolOp (>) e
+                                "<"     -> boolOp (<) e
+
                                 -- stack ops
                                 "drop"  -> dropOp e
                                 "swap"  -> swapOp e
                                 "dup"   -> dupOp e
 
+                                -- control-flow objects
                                 "def"   -> defineCustomFunc e
                                 "end"   -> endCustomFunc e
+                                "exit"  -> endCustomFunc e
+                                "if"    -> startBranch e
+                                "endif" -> skip e
                                 _       -> callCustomFunc e
                     in interp modEnv
 
@@ -135,10 +170,10 @@ eva program initStack = interp env
         env = Env { ws = words program, counter = 0, stack = initStack, retAddrs = [], funcs = [] }
     
 
-assert prog expected = (expected == actualRes) && (null actualRetStack)
-    where envRes = eva prog []
-          actualRes = stack envRes
-          actualRetStack = retAddrs envRes
+assert prog expected = (expected == actualRes) && retStackIsEmpty
+    where resultEnv = eva prog []
+          actualRes = stack resultEnv
+          retStackIsEmpty = null (retAddrs resultEnv)
 
 main = do
     print "start interpreting"
@@ -147,11 +182,16 @@ main = do
     print t1
 
     print "============="
-
     let t2 = assert "def inc 1 1 + * end 3 inc" [6]
     print t2
 
+    print "============="
+    let t3 = assert "def cmp 7 5 > if exit endif 20 end cmp" []
+    print t3
 
+    print "============="
+    let t4 = assert "def -- 1 - end" []
+    print t4
     --let res = stack envres !! 0
     --print res
     --return res
