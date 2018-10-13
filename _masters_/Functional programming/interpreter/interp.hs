@@ -37,23 +37,23 @@ indexOfItem item xs =
 
 -- stack grows to the left. that means a,b in (a - b) represented as [b a]
 doOp :: (Int -> Int -> Int) -> Env -> Env
-doOp operation e = e { stack = res : modStack }
+doOp operation e = e { stack = res : modStack, counter = counter e + 1 }
     where res = operation (stack e !! 1) (stack e !! 0)
           modStack = tail $ tail (stack e)
 
-negOp e = e { stack = modStack }
+negOp e = e { stack = modStack, counter = counter e + 1 }
     where modStack = -1 * head (stack e) : tail (stack e)
 
 
 -- stack ops
-dropOp e = e { stack = tail (stack e) }
+dropOp e = e { stack = tail (stack e), counter = counter e + 1 }
 
-swapOp e = e { stack = x : (y : restOfStack) }
+swapOp e = e { stack = x : (y : restOfStack), counter = counter e + 1 }
     where x = stack e !! 0
           y = stack e !! 1
           restOfStack = tail $ tail (stack e)
 
-dupOp e = e { stack = head (stack e) : (stack e) }
+dupOp e = e { stack = head (stack e) : (stack e), counter = counter e + 1 }
 
 
 
@@ -65,8 +65,8 @@ defineCustomFunc e =
         modFuncs = funcs e ++ [(funcName, funcBodyStartIndex)] -- add (name, index) to known funcs
 
         restOfProgram = slice (counter e) (length $ ws e) (ws e) -- remove everything to the left
-        funcBodyEndIndex = indexOfItem "end" restOfProgram
-        modCounter = counter e + funcBodyEndIndex
+        funcBodyEndIndex = indexOfItem "end" restOfProgram -- index of function's 'end' from current pos
+        modCounter = counter e + funcBodyEndIndex + 1 -- ctr = current + funcBody 
     in trace ("func: " ++ show funcName ++ 
                 "[" ++ show funcBodyStartIndex ++ ":" ++ show funcBodyEndIndex ++ "]")
         $ e { counter = modCounter, funcs = modFuncs }
@@ -76,16 +76,16 @@ callCustomFunc e =
     let funcNameToCall = ws e !! (counter e)
         funcNames = map (\fn -> fst fn) (funcs e) -- get names of all known functions
         funcToCall = funcs e !! (indexOfItem funcNameToCall funcNames) -- find function by name
-        -- get funcAddr from (funcName, funcAddr). sub 1 since next expr in 'interp' is counter++
-        funcCallAddress = snd funcToCall - 1 
+        -- get funcAddr from (funcName, funcAddr)
+        funcCallAddress = snd funcToCall
         
         returnAddr = counter e + 1 -- memorize address where we should return after invocation
     in e { counter = funcCallAddress, retAddrs = returnAddr : retAddrs e }
 
 
 endCustomFunc e = e { counter = addrToReturn, retAddrs = modRetAddrs }
-    -- get retAddr from top of retAddrs stack. sub 1 since next expr in 'interp' is counter++
-    where addrToReturn = head (retAddrs e) - 1 
+    -- get retAddr from top of retAddrs stack
+    where addrToReturn = head (retAddrs e)
           !modRetAddrs = tail (retAddrs e) -- remove it
 
 
@@ -122,7 +122,7 @@ interp e =
                                 "def"   -> defineCustomFunc e
                                 "end"   -> endCustomFunc e
                                 _       -> callCustomFunc e
-                    in interp modEnv { counter = counter modEnv + 1}
+                    in interp modEnv
 
 
 
@@ -148,7 +148,7 @@ main = do
 
     print "============="
 
-    let t2 = assert "def inc 1 + end 2 inc" [3]
+    let t2 = assert "def inc 1 1 + * end 3 inc" [6]
     print t2
 
 
