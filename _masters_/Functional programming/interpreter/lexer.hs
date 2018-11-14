@@ -5,7 +5,8 @@ import Text.Regex.Posix
 
 data Token = Token
     { v :: String
-    , pos :: Int
+    -- , len :: Int
+    -- , offs :: Int
     } deriving (Show, Read)
 
 
@@ -30,15 +31,16 @@ indexOfItem item xs =
          else 1 + indexOfItem item (tail xs)
 
 
-
--- function :: String -> Token
--- function arg
-  -- | (offs,len) <- (arg =~ s".*define") :: (MatchOffset,MatchLength)     = Token { v = "KEYWORD", pos = len }
-  -- | otherwise                           = Token { v = "NONE", pos = -1 }
-  -- where s :: String -> String
-        -- s = id
-function :: String -> [Int]
+function :: String -> Token
 function arg
+  | 0 == fst (res arg "define")       = Token { v = "KEYWORD" }
+  | otherwise                         = Token { v = "NONE" }
+  where res :: String -> String -> (Int,Int)
+        res text re = text =~ re :: (MatchOffset,MatchLength)
+
+
+function2 :: String -> [Int]
+function2 arg
   | (x,y) <- arg =~ "define" :: (MatchOffset,MatchLength) = [x, y]
   | otherwise = [123, 456]
 
@@ -56,9 +58,7 @@ main = do
              \ 90 99 gcd                            \
              \ 234 8100 gcd                         "
 
-    let pattern = ".*define.*"
-
     -- let tokens = lexer t7 pattern
     -- print tokens
-    print $ function "abcdefine"
+    print $ function "define"
 
