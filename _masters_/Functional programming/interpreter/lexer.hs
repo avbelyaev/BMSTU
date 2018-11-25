@@ -52,65 +52,81 @@ function2 arg
   | otherwise = [123, 456]
 -}
 
+isLetterOrDigit c = isLetter c || isDigit c
+
 
 isEOP :: String -> (Bool, String)
-isEOP follow = (matches, tail follow)
-    where matches = '\0' == head follow 
+isEOP text = (matches, tail text)
+    where matches = '\0' == head text 
 
 
-isWhitespace follow = (matches, tail follow)
-    where matches = head follow `elem` [' ', '\n', '\r', '\t']
+isWhitespace text = (matches, tail text)
+    where matches = head text `elem` [' ', '\n', '\r', '\t']
 
 
-isKeyword follow = checkPrefix "" follow
+isKeyword text = checkPrefix "" text
     where isKey word = word `elem` ["define", "end"]
 
           checkPrefix prefix str =
             if null str
             then (isKey prefix, str)
 
-            else if isLetter $ head str
+            else if isLetterOrDigit $ head str
                 then checkPrefix (prefix ++ [head str]) (tail str)
                 else (isKey prefix, str)
 
 
 recognizeIdent :: String -> String -> (String, String, Bool)
-recognizeIdent ident follow 
+recognizeIdent ident text 
     | (isDigit curr || isLetter curr) 
-        && not (isDigit next || isLetter next)  = (ident ++ [curr], tail follow, False)
-
-    | (isDigit curr || isLetter curr)           = recognizeIdent (ident ++ [curr]) (tail follow)
-    | otherwise                                 = (ident, follow, True)
-
-    where curr = head follow 
-          next = head $ tail follow
+        && not (isLetterOrDigit next)  = (ident ++ [curr], tail text, False)
+    | (isDigit curr || isLetter curr)           = recognizeIdent (ident ++ [curr]) (tail text)
+    | otherwise                                 = ("ident-err", text, True)
+    where curr = head text 
+          next = head $ tail text
     
 
-isIdent follow = 
-    if isLetter $ head follow
-    then let (ident, rest, error) = recognizeIdent "" follow
+isIdent text = 
+    if isLetter $ head text
+    then let (ident, follow, error) = recognizeIdent "" text
          in case error of
-                True   -> (False, follow)
-                False  -> (True, rest)
-    else (False, follow)
+                True    -> (False, text)
+                False   -> (True, follow)
+    else (False, text)
 
 
+recognizeDigit :: String -> String -> (String, String, Bool)
+recognizeDigit digit text 
+    | (isDigit curr) 
+        && not (isLetterOrDigit next)  = (digit ++ [curr], tail text, False)
+    | isDigit curr                              = recognizeDigit (digit ++ [curr]) (tail text)
+    | otherwise                                 = ("digit-err", text, True)
+    where curr = head text 
+          next = head $ tail text
 
+
+isNumeric text = 
+    if isDigit $ head text
+    then let (digit, follow, error) = recognizeDigit "" text
+         in case error of 
+                True    -> (False, text)
+                False   -> (True, follow)
+    else (False, text)
 
 
 scan :: String -> [Token]
-scan follow
-    | (True, _)    <- isEOP follow          = Token { v = "EOP" } : []
-    | (True, rest) <- isWhitespace follow   = scan rest
-    | (True, rest) <- isKeyword follow      = Token { v = "KEY" } : scan rest  
-    | (True, rest) <- isIdent follow        = Token { v = "IDT" } : scan rest
-    
-    | otherwise                             = Token { v = "-" } : (scan $ tail follow)
+scan text
+    | (True, _)    <- isEOP text            = Token { v = "EOP" } : []
+    | (True, follow) <- isWhitespace text   = scan follow
+    | (True, follow) <- isKeyword text      = Token { v = "KEY" } : scan follow  
+    | (True, follow) <- isIdent text        = Token { v = "IDT" } : scan follow
+    | (True, follow) <- isNumeric text      = Token { v = "NUM" } : scan follow
+    | otherwise                             = error "Unexpected character!" 
     
 
 {-| isDigit $ head symbols        = Token { v = "DIGIT", len = len } : (lexx $ tail symbols)
 
-    | (True, rest) <- isNumber follow       = Token { v = "NUM" } : scan rest
+    
 -}
 
 main = do
@@ -130,7 +146,7 @@ main = do
     --print $ recognizeIdent "" idt
     --print $ isIdent idt
 
-    let prog = " define dend \n\r\t  dfdg   \0"
+    let prog = " define gcd2 dend \n\r\t 123 dfdg  end \0"
     print $ scan prog
     print "done"
 
