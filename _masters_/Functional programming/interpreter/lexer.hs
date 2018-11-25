@@ -40,17 +40,19 @@ recognizeDigit digit text
           next = head $ tail text
 
 
+-- checks if prefix of given 'string' matches given 'predicate'
+-- accumulator holds prefix of 'string': [] [fuck], [f] [uck], [fu] [ck], ...
 recognizePrefix :: String -> String -> (String -> Bool) -> RecognitionResult
-recognizePrefix prefix postfix predicate =
-    if not $ isWhitespace $ head postfix
-    then recognizePrefix (prefix ++ [head postfix]) (tail postfix) predicate
-    else if predicate prefix
-         then (Just prefix, postfix)
-         else (Nothing, postfix)
+recognizePrefix accumulator string predicate =
+    if not $ isWhitespace $ head string
+    then recognizePrefix (accumulator ++ [head string]) (tail string) predicate
+    else if predicate accumulator
+         then (Just accumulator, string)
+         else (Nothing, string)
 
 
 
--- (заматчился ли токен, значение токена, оставшаяся справа часть программы)
+-- (заматчился ли токен, значение токена если заматчился, оставшаяся справа часть программы)
 type MatchResult = (Bool, Maybe String, String)
 
 
@@ -60,14 +62,14 @@ isEOP text = (matches, Just "EOP", tail text)
 
 
 isWhSpace :: String -> MatchResult
-isWhSpace text = (matches, Nothing, tail text)
+isWhSpace text = (matches, Nothing, tail text) -- ws is not needed and so ignored
     where matches = isWhitespace $ head text
 
 
 isKeyword :: String -> MatchResult
 isKeyword text = 
     let isKeywordPredicate word = word `elem` ["define", "end", "var", "val", "return"]
-        (maybeKeyword, follow) = recognizePrefix "" text isKeywordPredicate
+        (maybeKeyword, follow)  = recognizePrefix "" text isKeywordPredicate
     in case maybeKeyword of
             Just keyword    -> (True, Just keyword, follow)
             Nothing         -> (False, Nothing, text)
@@ -112,7 +114,7 @@ isOpertor text =
 
 scan :: String -> [Token]
 scan text
-    | (True, v, _)      <- isEOP text       = Token { t = "EOP     ", v = fromJust v} : []
+    | (True, v, _)      <- isEOP text       = Token { t = "EOP     ", v = fromJust v } : []
     | (True, _, follow) <- isWhSpace text   = scan follow
     | (True, v, follow) <- isKeyword text   = Token { t = "KEYWORD ", v = fromJust v } : scan follow 
     | (True, v, follow) <- isBracket text   = Token { t = "BRACKET ", v = fromJust v } : scan follow
@@ -122,11 +124,10 @@ scan text
     | otherwise                             = error "Unexpected character!" 
     
 
-
+-- runhaskell lexer.hs
 main = do
     print "start scanning"
 
-    
     let t1 = " define sum (a b)         \
              \      var result = a + b  \
              \      return result       \
