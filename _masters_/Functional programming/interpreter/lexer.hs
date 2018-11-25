@@ -1,154 +1,150 @@
 module Interp where
 
---import Text.Read
-import Text.Regex.Posix
 import Data.Char
-import Debug.Trace
+import Data.Maybe
 
 
 data Token = Token
-    { v :: String
+    { t :: String   -- token type
+    , v :: String   -- token value
     --, len :: Int
-    -- , offs :: Int
+    --, offs :: Int
     } deriving (Show, Read)
 
 
-isInteger s = case reads s :: [(Integer, String)] of
-    [(_, "")] -> True
-    _         -> False
-
-
--- from=1 to=3 [a, b, c, d, e] -> [b, c, d]
-slice :: Int -> Int -> [a] -> [a]
-slice from to xs = take (to - from + 1) (drop from xs)
-
-
--- item=c [a, b, c, d] -> 2
--- item=c [a, b, d] -> err
-indexOfItem :: String -> [String] -> Int
-indexOfItem item xs =
-    if null xs 
-    then error ("could not find " ++ show item ++ " among " ++ show xs)
-    else if item == (head xs)
-         then 0
-         else 1 + indexOfItem item (tail xs)
-
-
-{-
-lexer :: String -> Token
-lexer arg = case matcher of
-     (_,len) <- arg =~ "de(fi)ne" :: (MatchOffset,MatchLength)
-    (_,len):_         -> Token { v = "KEYWORD",   len = len }
-    (offs,len):_      -> Token { v = "KEYWORD",   len = len }
-    --_               -> Token { v = "NONE",      len = -1 }
-
-    --where regexMatcher :: String -> String -> (Int,Int)
-    --      regexMatcher text regex = text =~ regex :: (MatchOffset,MatchLength)
-
-
-function2 :: String -> [Int]
-function2 arg
-  | (x,y) <- arg =~ "define" :: (MatchOffset,MatchLength) = [x, y]
-  | otherwise = [123, 456]
--}
-
 isLetterOrDigit c = isLetter c || isDigit c
 
-
-isEOP :: String -> (Bool, String)
-isEOP text = (matches, tail text)
-    where matches = '\0' == head text 
+isWhitespace c = isSeparator c || isControl c
 
 
-isWhitespace text = (matches, tail text)
-    where matches = head text `elem` [' ', '\n', '\r', '\t']
+-- (распознанное значение в случае успеха, остаток программы справа)
+type RecognitionResult = (Maybe String, String)
 
-
-isKeyword text = checkPrefix "" text
-    where isKey word = word `elem` ["define", "end"]
-
-          checkPrefix prefix str =
-            if null str
-            then (isKey prefix, str)
-
-            else if isLetterOrDigit $ head str
-                then checkPrefix (prefix ++ [head str]) (tail str)
-                else (isKey prefix, str)
-
-
-recognizeIdent :: String -> String -> (String, String, Bool)
+recognizeIdent :: String -> String -> RecognitionResult
 recognizeIdent ident text 
-    | (isDigit curr || isLetter curr) 
-        && not (isLetterOrDigit next)  = (ident ++ [curr], tail text, False)
-    | (isDigit curr || isLetter curr)           = recognizeIdent (ident ++ [curr]) (tail text)
-    | otherwise                                 = ("ident-err", text, True)
+    | (isLetterOrDigit curr) 
+        && not (isLetterOrDigit next)   = (Just $ ident ++ [curr], tail text)
+    | (isDigit curr || isLetter curr)   = recognizeIdent (ident ++ [curr]) (tail text)
+    | otherwise                         = (Nothing, text)
     where curr = head text 
           next = head $ tail text
-    
-
-isIdent text = 
-    if isLetter $ head text
-    then let (ident, follow, error) = recognizeIdent "" text
-         in case error of
-                True    -> (False, text)
-                False   -> (True, follow)
-    else (False, text)
 
 
-recognizeDigit :: String -> String -> (String, String, Bool)
+recognizeDigit :: String -> String -> RecognitionResult
 recognizeDigit digit text 
     | (isDigit curr) 
-        && not (isLetterOrDigit next)  = (digit ++ [curr], tail text, False)
-    | isDigit curr                              = recognizeDigit (digit ++ [curr]) (tail text)
-    | otherwise                                 = ("digit-err", text, True)
+        && not (isLetterOrDigit next)   = (Just $ digit ++ [curr], tail text)
+    | isDigit curr                      = recognizeDigit (digit ++ [curr]) (tail text)
+    | otherwise                         = (Nothing, text)
     where curr = head text 
           next = head $ tail text
 
 
+recognizePrefix :: String -> String -> (String -> Bool) -> RecognitionResult
+recognizePrefix prefix postfix predicate =
+    if not $ isWhitespace $ head postfix
+    then recognizePrefix (prefix ++ [head postfix]) (tail postfix) predicate
+    else if predicate prefix
+         then (Just prefix, postfix)
+         else (Nothing, postfix)
+
+
+
+-- (заматчился ли токен, значение токена, оставшаяся справа часть программы)
+type MatchResult = (Bool, Maybe String, String)
+
+
+isEOP :: String -> MatchResult
+isEOP text = (matches, Just "EOP", tail text)
+    where matches = null text || '\0' == head text 
+
+
+isWhSpace :: String -> MatchResult
+isWhSpace text = (matches, Nothing, tail text)
+    where matches = isWhitespace $ head text
+
+
+isKeyword :: String -> MatchResult
+isKeyword text = 
+    let isKeywordPredicate word = word `elem` ["define", "end", "var", "val", "return"]
+        (maybeKeyword, follow) = recognizePrefix "" text isKeywordPredicate
+    in case maybeKeyword of
+            Just keyword    -> (True, Just keyword, follow)
+            Nothing         -> (False, Nothing, text)
+          
+
+isBracket :: String -> MatchResult
+isBracket text = case (head text) of
+    '(' -> (True, Just "(", tail text)
+    ')' -> (True, Just ")", tail text)
+    _   -> (False, Nothing, text)
+
+
+isIdent :: String -> MatchResult
+isIdent text = 
+    if isLetter $ head text
+    then let (maybeIdent, follow) = recognizeIdent "" text
+         in case maybeIdent of
+                Just ident  -> (True, Just ident, follow)
+                Nothing     -> (False, Nothing, text)
+    else (False, Nothing, text)
+
+
+isNumeric :: String -> MatchResult
 isNumeric text = 
     if isDigit $ head text
-    then let (digit, follow, error) = recognizeDigit "" text
-         in case error of 
-                True    -> (False, text)
-                False   -> (True, follow)
-    else (False, text)
+    then let (maybeDigit, follow) = recognizeDigit "" text
+         in case maybeDigit of 
+                Just digit  -> (True, Just digit, follow)
+                Nothing     -> (False, Nothing, text)
+    else (False, Nothing, text)
+
+
+isOpertor :: String -> MatchResult
+isOpertor text = 
+    let isOperatorPredicate word = word `elem` ["+", "-", "*", "/", "="]
+        (maybeOerator, follow) = recognizePrefix "" text isOperatorPredicate
+    in case maybeOerator of 
+        Just operator       -> (True, Just operator, follow)
+        Nothing             -> (False, Nothing, text)
+
 
 
 scan :: String -> [Token]
 scan text
-    | (True, _)    <- isEOP text            = Token { v = "EOP" } : []
-    | (True, follow) <- isWhitespace text   = scan follow
-    | (True, follow) <- isKeyword text      = Token { v = "KEY" } : scan follow  
-    | (True, follow) <- isIdent text        = Token { v = "IDT" } : scan follow
-    | (True, follow) <- isNumeric text      = Token { v = "NUM" } : scan follow
+    | (True, v, _)      <- isEOP text       = Token { t = "EOP     ", v = fromJust v} : []
+    | (True, _, follow) <- isWhSpace text   = scan follow
+    | (True, v, follow) <- isKeyword text   = Token { t = "KEYWORD ", v = fromJust v } : scan follow 
+    | (True, v, follow) <- isBracket text   = Token { t = "BRACKET ", v = fromJust v } : scan follow
+    | (True, v, follow) <- isOpertor text   = Token { t = "OPERATOR", v = fromJust v } : scan follow
+    | (True, v, follow) <- isIdent text     = Token { t = "IDENT   ", v = fromJust v } : scan follow
+    | (True, v, follow) <- isNumeric text   = Token { t = "NUMBER  ", v = fromJust v } : scan follow
     | otherwise                             = error "Unexpected character!" 
     
 
-{-| isDigit $ head symbols        = Token { v = "DIGIT", len = len } : (lexx $ tail symbols)
-
-    
--}
 
 main = do
     print "start scanning"
 
-    let t7 = "                                      \
-             \ define =0? dup 0 = end               \
-             \ define gcd                           \
-             \       =0? if drop exit endif         \
-             \       swap over mod                  \
-             \       gcd                            \
-             \ end                                  \
-             \ 90 99 gcd                            \
-             \ 234 8100 gcd                         "
+    
+    let t1 = " define sum (a b)         \
+             \      var result = a + b  \
+             \      return result       \
+             \      end                 \
+             \ sum(3 5)                 "
 
-    --let idt = "id1337  <rest of programm>"
-    --print $ recognizeIdent "" idt
-    --print $ isIdent idt
+    let tokens = scan t1
+    mapM_ print tokens
 
-    let prog = " define gcd2 dend \n\r\t 123 dfdg  end \0"
-    print $ scan prog
-    print "done"
+    -- let idt = "id1337  <rest of programm>"
+    -- print $ recognizeIdent "" idt
+    -- print $ "isIdentifier: " ++ show (isIdent idt)
+
+    -- let num = "1231   <rest of prog>"
+    -- print $ recognizeDigit "" num
+    -- print $ "isNumeric: " ++ show (isNumeric num)
+
+    
 
 
 
