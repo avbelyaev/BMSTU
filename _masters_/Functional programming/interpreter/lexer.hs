@@ -2,6 +2,7 @@ module Interp where
 
 --import Text.Read
 import Text.Regex.Posix
+import Data.Char
 
 data Token = Token
     { v :: String
@@ -50,8 +51,8 @@ function2 arg
 -}
 
 
-isEOF :: String -> (Bool, String)
-isEOF symbols = (matches, rest)
+isEOP :: String -> (Bool, String)
+isEOP symbols = (matches, rest)
     where matches = '\0' == head symbols
           rest = tail symbols
 
@@ -59,13 +60,50 @@ isEOF symbols = (matches, rest)
 isWhitespace symbols = (matches, rest)
     where matches = head symbols `elem` [' ', '\n', '\r', '\t']
           rest = tail symbols
+
+
+isKeyword symbols = checkPrefix "" symbols
+    where isKey word = word `elem` ["define", "end"]
+
+          checkPrefix prefix str =
+            if null str
+            then (isKey prefix, str)
+
+            else if isLetter $ head str
+                then checkPrefix (prefix ++ [head str]) (tail str)
+                else (isKey prefix, str)
+
+
+recognizeIdent :: String -> String -> (String, String, Bool)
+recognizeIdent ident symbols 
+    | (isDigit curr || isLetter curr) 
+        && not (isDigit next || isLetter next)  = (ident ++ [curr], tail symbols, False)
+
+    | (isDigit curr || isLetter curr)           = recognizeIdent (ident ++ [curr]) (tail symbols)
+    | otherwise                                 = (ident, symbols, True)
+
+    where curr = head symbols 
+          next = head $ tail symbols
     
 
-lexx :: String -> [Token]
-lexx symbols
-    | (True, rest) <- isEOF symbols         = [ Token { v = "EOF" } ]
-    | (True, rest) <- isWhitespace symbols  = lexx rest
-    | otherwise                     = Token { v = "unk" } : (lexx $ tail symbols)
+isIdent symbols = 
+    let curr = head symbols
+    in  if (isLetter curr || isDigit curr)
+        then let (ident, follow, error) = recognizeIdent "" symbols
+                in (True, symbols) -- TODO remove line
+             --in case (follow, error) of
+               --      (word, True) -> (False, follow)
+                 --    (word, False) -> (True, follow)
+        else (False, symbols)
+
+
+nextToken :: String -> [Token]
+nextToken symbols
+    | (True, _) <- isEOP symbols            = [ Token { v = "EOP" } ]
+    | (True, rest) <- isWhitespace symbols  = nextToken rest
+    | (True, rest) <- isKeyword symbols     = Token { v = "KEY" } : nextToken rest
+    | (True, rest) <- isIdent symbols       = Token { v = "IDT" } : nextToken rest
+    | otherwise                             = Token { v = "-" } : (nextToken $ tail symbols)
     
 
 {-| isDigit $ head symbols        = Token { v = "DIGIT", len = len } : (lexx $ tail symbols)
@@ -76,7 +114,7 @@ lexx symbols
 -}
 
 main = do
-    print "start interpreting"
+    print "start scanning"
 
     let t7 = "                                      \
              \ define =0? dup 0 = end               \
@@ -88,10 +126,10 @@ main = do
              \ 90 99 gcd                            \
              \ 234 8100 gcd                         "
 
-    -- let tokens = lexer t7 pattern
-    -- print tokens
-    let prog = " \t \r \n  dfdg   \0"
-    print $ lexx prog
+    let idt = "id1337  <rest of programm>"
+    print $ recognizeIdent "" idt
+    --let prog = " defineend \n\r\t  dfdg   \0"
+    --print $ nextToken prog
 
 
 
