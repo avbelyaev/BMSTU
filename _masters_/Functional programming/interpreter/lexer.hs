@@ -5,7 +5,7 @@ import Text.Regex.Posix
 
 data Token = Token
     { v :: String
-    -- , len :: Int
+    --, len :: Int
     -- , offs :: Int
     } deriving (Show, Read)
 
@@ -31,19 +31,49 @@ indexOfItem item xs =
          else 1 + indexOfItem item (tail xs)
 
 
-function :: String -> Token
-function arg
-  | 0 == fst (res arg "define")       = Token { v = "KEYWORD" }
-  | otherwise                         = Token { v = "NONE" }
-  where res :: String -> String -> (Int,Int)
-        res text re = text =~ re :: (MatchOffset,MatchLength)
+{-
+lexer :: String -> Token
+lexer arg = case matcher of
+     (_,len) <- arg =~ "de(fi)ne" :: (MatchOffset,MatchLength)
+    (_,len):_         -> Token { v = "KEYWORD",   len = len }
+    (offs,len):_      -> Token { v = "KEYWORD",   len = len }
+    --_               -> Token { v = "NONE",      len = -1 }
+
+    --where regexMatcher :: String -> String -> (Int,Int)
+    --      regexMatcher text regex = text =~ regex :: (MatchOffset,MatchLength)
 
 
 function2 :: String -> [Int]
 function2 arg
   | (x,y) <- arg =~ "define" :: (MatchOffset,MatchLength) = [x, y]
   | otherwise = [123, 456]
+-}
 
+
+isEOF :: String -> (Bool, String)
+isEOF symbols = (matches, rest)
+    where matches = '\0' == head symbols
+          rest = tail symbols
+
+
+isWhitespace symbols = (matches, rest)
+    where matches = head symbols `elem` [' ', '\n', '\r', '\t']
+          rest = tail symbols
+    
+
+lexx :: String -> [Token]
+lexx symbols
+    | (True, rest) <- isEOF symbols         = [ Token { v = "EOF" } ]
+    | (True, rest) <- isWhitespace symbols  = lexx rest
+    | otherwise                     = Token { v = "unk" } : (lexx $ tail symbols)
+    
+
+{-| isDigit $ head symbols        = Token { v = "DIGIT", len = len } : (lexx $ tail symbols)
+    | isVar $ head symbols          = Token { v = "VAR", len = len } : (lexx $ tail symbols)
+    | isKeyword $ head symbols      = Token { v = "KEYWORD", len = len } : (lexx $ tail symbols)
+    | isEOF $ head symbols          = Token { v = "EOF", len = len } : (lexx $ tail symbols)
+    | otherwise                     = error("undefined symbol")
+-}
 
 main = do
     print "start interpreting"
@@ -60,5 +90,9 @@ main = do
 
     -- let tokens = lexer t7 pattern
     -- print tokens
-    print $ function "define"
+    let prog = " \t \r \n  dfdg   \0"
+    print $ lexx prog
+
+
+
 
