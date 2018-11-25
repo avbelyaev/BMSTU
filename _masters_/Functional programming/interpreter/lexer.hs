@@ -3,6 +3,8 @@ module Interp where
 --import Text.Read
 import Text.Regex.Posix
 import Data.Char
+import Debug.Trace
+
 
 data Token = Token
     { v :: String
@@ -52,17 +54,15 @@ function2 arg
 
 
 isEOP :: String -> (Bool, String)
-isEOP symbols = (matches, rest)
-    where matches = '\0' == head symbols
-          rest = tail symbols
+isEOP follow = (matches, tail follow)
+    where matches = '\0' == head follow 
 
 
-isWhitespace symbols = (matches, rest)
-    where matches = head symbols `elem` [' ', '\n', '\r', '\t']
-          rest = tail symbols
+isWhitespace follow = (matches, tail follow)
+    where matches = head follow `elem` [' ', '\n', '\r', '\t']
 
 
-isKeyword symbols = checkPrefix "" symbols
+isKeyword follow = checkPrefix "" follow
     where isKey word = word `elem` ["define", "end"]
 
           checkPrefix prefix str =
@@ -75,42 +75,42 @@ isKeyword symbols = checkPrefix "" symbols
 
 
 recognizeIdent :: String -> String -> (String, String, Bool)
-recognizeIdent ident symbols 
+recognizeIdent ident follow 
     | (isDigit curr || isLetter curr) 
-        && not (isDigit next || isLetter next)  = (ident ++ [curr], tail symbols, False)
+        && not (isDigit next || isLetter next)  = (ident ++ [curr], tail follow, False)
 
-    | (isDigit curr || isLetter curr)           = recognizeIdent (ident ++ [curr]) (tail symbols)
-    | otherwise                                 = (ident, symbols, True)
+    | (isDigit curr || isLetter curr)           = recognizeIdent (ident ++ [curr]) (tail follow)
+    | otherwise                                 = (ident, follow, True)
 
-    where curr = head symbols 
-          next = head $ tail symbols
+    where curr = head follow 
+          next = head $ tail follow
     
 
-isIdent symbols = 
-    let curr = head symbols
-    in  if (isLetter curr || isDigit curr)
-        then let (ident, follow, error) = recognizeIdent "" symbols
-                in (True, symbols) -- TODO remove line
-             --in case (follow, error) of
-               --      (word, True) -> (False, follow)
-                 --    (word, False) -> (True, follow)
-        else (False, symbols)
+isIdent follow = 
+    if isLetter $ head follow
+    then let (ident, rest, error) = recognizeIdent "" follow
+         in case error of
+                True   -> (False, follow)
+                False  -> (True, rest)
+    else (False, follow)
 
 
-nextToken :: String -> [Token]
-nextToken symbols
-    | (True, _) <- isEOP symbols            = [ Token { v = "EOP" } ]
-    | (True, rest) <- isWhitespace symbols  = nextToken rest
-    | (True, rest) <- isKeyword symbols     = Token { v = "KEY" } : nextToken rest
-    | (True, rest) <- isIdent symbols       = Token { v = "IDT" } : nextToken rest
-    | otherwise                             = Token { v = "-" } : (nextToken $ tail symbols)
+
+
+
+scan :: String -> [Token]
+scan follow
+    | (True, _)    <- isEOP follow          = Token { v = "EOP" } : []
+    | (True, rest) <- isWhitespace follow   = scan rest
+    | (True, rest) <- isKeyword follow      = Token { v = "KEY" } : scan rest  
+    | (True, rest) <- isIdent follow        = Token { v = "IDT" } : scan rest
+    
+    | otherwise                             = Token { v = "-" } : (scan $ tail follow)
     
 
 {-| isDigit $ head symbols        = Token { v = "DIGIT", len = len } : (lexx $ tail symbols)
-    | isVar $ head symbols          = Token { v = "VAR", len = len } : (lexx $ tail symbols)
-    | isKeyword $ head symbols      = Token { v = "KEYWORD", len = len } : (lexx $ tail symbols)
-    | isEOF $ head symbols          = Token { v = "EOF", len = len } : (lexx $ tail symbols)
-    | otherwise                     = error("undefined symbol")
+
+    | (True, rest) <- isNumber follow       = Token { v = "NUM" } : scan rest
 -}
 
 main = do
@@ -126,10 +126,13 @@ main = do
              \ 90 99 gcd                            \
              \ 234 8100 gcd                         "
 
-    let idt = "id1337  <rest of programm>"
-    print $ recognizeIdent "" idt
-    --let prog = " defineend \n\r\t  dfdg   \0"
-    --print $ nextToken prog
+    --let idt = "id1337  <rest of programm>"
+    --print $ recognizeIdent "" idt
+    --print $ isIdent idt
+
+    let prog = " define dend \n\r\t  dfdg   \0"
+    print $ scan prog
+    print "done"
 
 
 
