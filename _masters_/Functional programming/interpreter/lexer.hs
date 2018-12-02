@@ -1,15 +1,23 @@
-module Interp where
+module ALexer where
 
 import Data.Char
 import Data.Maybe
 
 
+data TokType = EopToken
+             | KeywordToken
+             | BracketToken
+             | OperatorToken
+             | IdentToken
+             | NumberToken
+             deriving (Show, Eq, Enum)
+
 data Token = Token
-    { t :: String   -- token type
+    { t :: TokType
     , v :: String   -- token value
     --, len :: Int
     --, offs :: Int
-    } deriving (Show, Read)
+    } deriving (Show, Eq)
 
 
 isLetterOrDigit c = isLetter c || isDigit c
@@ -114,13 +122,13 @@ isOpertor text =
 
 scan :: String -> [Token]
 scan text
-    | (True, v, _)      <- isEOP text       = Token { t = "EOP     ", v = fromJust v } : []
+    | (True, v, _)      <- isEOP text       = Token { t = EopToken, v = fromJust v } : []
     | (True, _, follow) <- isWhSpace text   = scan follow
-    | (True, v, follow) <- isKeyword text   = Token { t = "KEYWORD ", v = fromJust v } : scan follow 
-    | (True, v, follow) <- isBracket text   = Token { t = "BRACKET ", v = fromJust v } : scan follow
-    | (True, v, follow) <- isOpertor text   = Token { t = "OPERATOR", v = fromJust v } : scan follow
-    | (True, v, follow) <- isIdent text     = Token { t = "IDENT   ", v = fromJust v } : scan follow
-    | (True, v, follow) <- isNumeric text   = Token { t = "NUMBER  ", v = fromJust v } : scan follow
+    | (True, v, follow) <- isKeyword text   = Token { t = KeywordToken,  v = fromJust v } : scan follow 
+    | (True, v, follow) <- isBracket text   = Token { t = BracketToken,  v = fromJust v } : scan follow
+    | (True, v, follow) <- isOpertor text   = Token { t = OperatorToken, v = fromJust v } : scan follow
+    | (True, v, follow) <- isIdent text     = Token { t = IdentToken,    v = fromJust v } : scan follow
+    | (True, v, follow) <- isNumeric text   = Token { t = NumberToken,   v = fromJust v } : scan follow
     | otherwise                             = error "Unexpected character!" 
     
 
