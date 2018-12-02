@@ -36,52 +36,54 @@ nextToken e = modEnv
           modEnv = e { tokens = tail $ tokens e }
 
 
-parse :: Env -> Env
-parse e = trace "S" (parse_E e)
+parse :: [Token] -> Env
+parse tokenList = parse_E e
+    where e = Env { tokens = tokenList, stack = [] }
+
 
 -- <E> ::= <T> <E’>.
 parse_E :: Env -> Env
 parse_E e = 
-    trace "E" (parse_E1 $ parse_T e)
+    trace " E -> T E1" (parse_E1 $ parse_T e)
 
 
 -- <T> ::= <F> <T’>.
 parse_T :: Env -> Env
 parse_T e =
-    trace "T" (parse_T1 $ parse_F e)
+    trace " T -> F T1" (parse_T1 $ parse_F e)
 
 
 -- <E’> ::= + <T> <E’> | - <T> <E’> | .
 parse_E1 :: Env -> Env
 parse_E1 e = 
-    let token = trace "E1" (head $ tokens e)
-        op = trace (">>>E1:" ++ show token) (v $ token)
+    let token = head $ tokens e
+        op = trace ("E1:" ++ show token) (v $ token)
     in case op of
         "+" -> parse_E1 $ addOp $ parse_T $ nextToken e
-        "-" -> nextToken $ parse_E1 $ subOp $ parse_T e
+        "-" -> parse_E1 $ subOp $ parse_T $ nextToken e
         _   -> e
 
 
 -- <T’> ::= * <F> <T’> | / <F> <T’> | .
 parse_T1 :: Env -> Env
 parse_T1 e = 
-    let token = trace "T1" (head $ tokens e)
-        op = trace (">>>T1:" ++ show token) (v $ token)
+    let token = head $ tokens e
+        op = trace ("T1:" ++ show token) (v $ token)
     in case op of
-        "*" -> nextToken $ parse_T1 $ mulOp $ parse_F e
-        "/" -> nextToken $ parse_T1 $ divOp $ parse_F e
-        _   -> e
+        "*" -> parse_T1 $ mulOp $ parse_F $ nextToken e
+        "/" -> parse_T1 $ divOp $ parse_F $ nextToken e
+        _   -> trace "T1 skip" e
 
 
 -- <F> ::= <number> | <var> | ( <E> ) | - <F>.
 parse_F :: Env -> Env
 parse_F e =
-    let token = trace "F" (head $ tokens e)
-        tokType = trace (">>> F:" ++ show token) (t $ token)
+    let token = head $ tokens e
+        tokType = trace (" F:" ++ show token) (t $ token)
     in case tokType of
-        NumberToken -> nextToken $ pushOp e (toInt $ v token)
-        _           -> e
- 
+        NumberToken     -> nextToken $ pushOp e (toInt $ v token)
+        BracketToken    -> nextToken $ parse_E $ nextToken e
+        _               -> e
 
 
 
@@ -90,12 +92,11 @@ parse_F e =
 -- - comment Lexer's `main`
 -- - do `runhaskell parser.hs`
 main = do
-    let p2 = "1 + 2 + 51 "
+    let p2 = "(5 - 1) * 2 + 1 "
     let tokens = scan p2
     mapM_ print tokens
 
     print "start parsing"
-    let e = Env { tokens = tokens, stack = [] }
-    let res = parse e
-    print res
+    let res = parse tokens
+    print $ stack res
     
