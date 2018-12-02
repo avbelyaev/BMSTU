@@ -1,4 +1,5 @@
-module ALexer where
+module Lexer where
+-- module's name should be capitalized filename
 
 import Data.Char
 import Data.Maybe
@@ -132,7 +133,8 @@ scan text
     | otherwise                             = error "Unexpected character!" 
     
 
--- runhaskell lexer.hs
+-- run Lexer only: uncomment following and do `runhaskell lexer.hs`
+{-
 main = do
     print "start scanning"
 
@@ -144,17 +146,4 @@ main = do
 
     let tokens = scan t1
     mapM_ print tokens
-
-    -- let idt = "id1337  <rest of programm>"
-    -- print $ recognizeIdent "" idt
-    -- print $ "isIdentifier: " ++ show (isIdent idt)
-
-    -- let num = "1231   <rest of prog>"
-    -- print $ recognizeDigit "" num
-    -- print $ "isNumeric: " ++ show (isNumeric num)
-
-    
-
-
-
-
+-}
