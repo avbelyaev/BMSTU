@@ -158,7 +158,7 @@ parse tokenList = parse_E e
 -- ================================================
 printDigraph :: [Node] -> String
 printDigraph ast = 
-    "digraph { dummy [label = \"\", shape = none]" ++
+    "digraph { dummy [label = \"\", shape = none]\n" ++
         (printNodeList ast) ++ 
         (printEdgeList ast) ++ 
     "}"
