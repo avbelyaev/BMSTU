@@ -157,12 +157,10 @@ parse tokenList = parse_E e
 
 printDigraph :: [Node] -> String
 printDigraph ast = graphvizHeader ++ nodeList ++ edgeList ++ graphvizEnder
-    where graphvizHeader = "digraph {           \n\
-          \  rankdir = LR                       \n\
-          \  dummy [label = '', shape = none]   \n"
+    where graphvizHeader = "digraph { dummy [label = \"\", shape = none] \n"
           graphvizEnder = "}"
           nodeList = (getNodeNames ast) ++ "\n"
-          edgeList = "  <edges>\n"
+          edgeList = (getEdgeList ast) ++ "\n"
 
 
 mydfs graph visited [] = reverse visited
@@ -181,13 +179,39 @@ dfs visited nodes =
             else dfs (curr:visited) (nodes ++ adjacent)
 
 
-nodeToDigraphString node =
-    "  " ++ show(nodeId node) ++ " [shape = circle]"
+nodeToDigraphVertex node =
+    "  " ++ show(nodeId node) ++ 
+    " [label = \"" ++ (val node) ++ "\"" ++
+    " shape = circle" ++
+    " id = \"" ++ show(nodeId node) ++ "\"]"
 
 getNodeNames ast = unlines names
-    where names = map nodeToDigraphString dfsNodes
+    where names = map nodeToDigraphVertex dfsNodes
           dfsNodes = dfs [] ast 
 
+nodeToDigraphEdge nodeFrom nodeTo =
+    "  " ++ show(nodeId nodeFrom) ++ " -> " ++ show(nodeId nodeTo)
+
+edgeHelper node childNodes =
+    if null childNodes
+    then []
+    else let edge = nodeToDigraphEdge node (head childNodes)
+         in [edge] ++ edgeHelper node (tail childNodes)
+
+getEdges node = unlines edges
+    where edges = edgeHelper node (childs node)
+
+getEdgeList ast = unlines edges
+    where edges = map getEdges dfsNodes
+          dfsNodes = dfs [] ast
+
+{-
+getEdges x xs =
+    if null $ xs
+    then []
+    else let edge = show(x) ++ " -> " ++ show(head xs)
+         in [edge] ++ getEdges x (tail xs)
+-}
 
 
 -- run Parser after Lexer: 
@@ -195,7 +219,7 @@ getNodeNames ast = unlines names
 -- - comment Lexer's `main`
 -- - do `runhaskell parser.hs`
 main = do
-    print ">>> scanning"
+    putStrLn ">>> scanning"
     -- let p2 = "(5 - 1) * (2 + 1) "
     -- let p2 = "2 * 5 + 3 * 4 + 4 * 6 "
     -- let p2 = "1 + 2 "
@@ -203,22 +227,27 @@ main = do
     let tokens = scan p2
     mapM_ print tokens
 
-    print ">>> parsing"
+    putStrLn "\n>>> parsing"
     let res = parse tokens
 
-    print ">>> result"
+    putStrLn "\n>>> result"
     print $ stack res
 
-    print ">>> AST"
+    putStrLn "\n>>> AST"
     let ast = nodes res
     print ast
 
+    putStrLn "\n>>> Graphviz"
     putStr $ printDigraph ast
 
 
     -- print ">>> DFS"
-    -- let vis = getNodeNames ast
-    -- putStr vis
+    -- let vis = dfs [] ast
+    -- mapM_ print vis
+
+    -- putStrLn "\n>>> edges to root vertex childs:"
+    -- let edges = getEdges $ head ast
+    -- putStrLn edges
 
 
     
