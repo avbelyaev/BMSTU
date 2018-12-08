@@ -1,5 +1,4 @@
 module Parser where
--- module's name should be capitalized filename
 
 import Text.Read
 import Debug.Trace
@@ -8,21 +7,21 @@ import Data.Maybe
 import Lexer
 
 
+data Node = Node 
+    { name      :: String
+    , val       :: String
+    , childs    :: [Node]
+    } deriving (Show)
+
 data Env = Env
-    { tokens :: [Token]
-    , stack  :: [Int]
+    { tokens    :: [Token]
+    , stack     :: [Int]
+    , nodes     :: [Node]
     } deriving (Show)
 
 
-isInteger s = case reads s :: [(Integer, String)] of
-    [(_, "")] -> True
-    _         -> False
-
-
-toInt :: Token -> Maybe Int
-toInt tok = case (isInteger $ v tok) of
-    True    -> Just (read $ v tok :: Int)
-    False   -> Nothing
+toInt :: String -> Int
+toInt val = read $ val :: Int
 
 
 binOp :: (Int -> Int -> Int) -> Env -> Env
@@ -37,69 +36,116 @@ subOp e = binOp (-) e
 mulOp e = binOp (*) e
 divOp e = binOp (div) e
 
-pushOp e val = e { stack = val : (stack e) }
-
+pushOp e token = e { stack = intVal : (stack e) }
+    where intVal = toInt $ v token
 
 nextToken e = modEnv
     where nextTok = head $ tokens e
           modEnv = e { tokens = tail $ tokens e }
 
--- <E> ::= <T> <E’>.
--- <T> ::= <F> <T’>.
--- <E’> ::= + <T> <E’> | - <T> <E’> | .
--- <T’> ::= * <F> <T’> | / <F> <T’> | .
--- <F> ::= <number> | <var> | ( <E> ) | - <F> .
 
-parse :: [Token] -> Env
-parse tokenList = parse_E e
-    where e = Env { tokens = tokenList, stack = [] }
+-- pretty printer funcs
+
+makeGenericNode name val = Node { name = name, val = val, childs = [] }
+
+makeNodeE e = e { nodes = newNode : modNodes }
+    where modNodes = tail $ tail $ nodes e
+          nodeT  = nodes e !! 0
+          nodeE1 = nodes e !! 1
+          newNode = Node { name = "E", childs = [nodeT, nodeE1], val = "" }
+
+makeNodeT e = e { nodes = newNode : modNodes }
+    where modNodes = tail $ tail $ nodes e
+          nodeF  = nodes e !! 0
+          nodeT1 = nodes e !! 1
+          newNode = Node { name = "T", childs = [nodeF, nodeT1], val = "" }
+
+makeNodeE1 e = e { nodes = newNode : modNodes }
+    where modNodes = tail $ tail $ nodes e
+          nodeT  = nodes e !! 0
+          nodeE1 = nodes e !! 1
+          nodeOp = makeGenericNode "-" "(+/-)"
+          newNode = Node { name = "E1", childs = [nodeOp, nodeT, nodeE1], val = "" }
+
+makeNodeE1Empty e = e { nodes = newNode : (nodes e) }
+    where newNode = Node { name = "E1", childs = [], val = "e" }
+
+makeNodeT1 e = e { nodes = newNode : modNodes }
+    where modNodes = tail $ tail $ nodes e
+          nodeF  = nodes e !! 0
+          nodeT1 = nodes e !! 1
+          nodeOp = makeGenericNode "-" "(*/:)"
+          newNode = Node { name = "T1", childs = [nodeOp, nodeF, nodeT1], val = "" }
+
+makeNodeT1Empty e = e { nodes = newNode : (nodes e) }
+    where newNode = Node { name = "T1", childs = [], val = "e" }
+
+makeNodeF token e = e { nodes = newNode : (nodes e) }
+    where newNode = Node { name = "F", childs = [], val = v token }
+
+makeNodeFBracket e = e { nodes = newNode : modNodes }
+    where modNodes = tail $ nodes e
+          nodeE = nodes e !! 0
+          nodeLeftParen = makeGenericNode "-" "("
+          nodeRightParen = makeGenericNode "-" ")"
+          newNode = Node { name = "F"
+                         , childs = [nodeLeftParen, nodeE, nodeRightParen]
+                         , val = "" }
+
+-- <E> ::= <T> <E’>
+-- <T> ::= <F> <T’>
+-- <E’> ::= + <T> <E’> | - <T> <E’> | e
+-- <T’> ::= * <F> <T’> | / <F> <T’> | e
+-- <F> ::= <number> | <var> | ( <E> ) | - <F>
 
 
--- <E> ::= <T> <E’>.
+-- <E> ::= <T> <E’>
 parse_E :: Env -> Env
 parse_E e = 
-    parse_E1 $ trace " . E" (parse_T e)
-
+    makeNodeE $ parse_E1 $ parse_T e
 
 -- <T> ::= <F> <T’>.
 parse_T :: Env -> Env
 parse_T e =
-    parse_T1 $ trace " . . T" (parse_F e)
+    makeNodeT $ parse_T1 $ parse_F e
 
-
--- <E’> ::= + <T> <E’> | - <T> <E’> | .
+-- <E’> ::= + <T> <E’> | - <T> <E’> | e
 parse_E1 :: Env -> Env
 parse_E1 e = 
     let token = head $ tokens e
         op = v $ token
     in case op of
-        "+" -> parse_E1 $ addOp $ parse_T $ trace " . . . E1 +" (nextToken e)
-        "-" -> parse_E1 $ subOp $ parse_T $ trace " . . . E1 -" (nextToken e)
-        _   -> trace " . . . E1 e" e
+        "+" -> makeNodeE1 $ parse_E1 $ addOp $ parse_T $ nextToken e
+        "-" -> makeNodeE1 $ parse_E1 $ subOp $ parse_T $ nextToken e
+        _   -> makeNodeE1Empty e
 
-
--- <T’> ::= * <F> <T’> | / <F> <T’> | .
+-- <T’> ::= * <F> <T’> | / <F> <T’> | e
 parse_T1 :: Env -> Env
 parse_T1 e = 
     let token = head $ tokens e
         op = v $ token
     in case op of
-        "*" -> parse_T1 $ mulOp $ parse_F $ trace " . . . T1 *" (nextToken e)
-        "/" -> parse_T1 $ divOp $ parse_F $ trace " . . . T1 /" (nextToken e)
-        _   -> trace " . . . T1 e" e
+        "*" -> makeNodeT1 $ parse_T1 $ mulOp $ parse_F $ nextToken e
+        "/" -> makeNodeT1 $ parse_T1 $ divOp $ parse_F $ nextToken e
+        _   -> makeNodeT1Empty e
 
-
--- <F> ::= <number> | <var> | ( <E> ) | - <F>.
+-- <F> ::= <number> | <var> | ( <E> ) | - <F>
 parse_F :: Env -> Env
 parse_F e =
     let token = head $ tokens e
         tokType = t $ token
-        maybeIntToken = toInt token
     in case tokType of
-        NumberToken     -> nextToken $ trace (" . . . F  " ++ v token) (pushOp e (fromJust maybeIntToken))
-        BracketToken    -> nextToken $ parse_E $ nextToken e
-        _               -> error "fuck"
+        NumberToken     -> makeNodeF token (nextToken $ pushOp e token)
+        BracketToken    -> makeNodeFBracket $ nextToken $ parse_E $ nextToken e
+        _               -> error "unexpected token"
 
+
+
+parse :: [Token] -> Env
+parse tokenList = parse_E e
+    where e = Env { tokens = tokenList
+                  , stack = []
+                  , nodes = [] }
 
 
 -- run Parser after Lexer: 
@@ -109,11 +155,15 @@ parse_F e =
 main = do
     --let p2 = "(5 - 1) * (2 + 1) "
     -- let p2 = "2 * 5 + 3 * 4 + 4 * 6 "
-    let p2 = "1 + 2 + 3 - (4 * 5) + 6 "
+    let p2 = "1 + 2 "
     let tokens = scan p2
     mapM_ print tokens
 
     print "start parsing"
     let res = parse tokens
     print $ stack res
+
+    print $ nodes res
+    
+
     
