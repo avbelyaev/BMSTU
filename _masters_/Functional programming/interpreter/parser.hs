@@ -8,8 +8,7 @@ import Lexer
 
 
 data Node = Node 
-    { name      :: String
-    , val       :: String
+    { val       :: String
     , childs    :: [Node]
     } deriving (Show)
 
@@ -46,51 +45,52 @@ nextToken e = modEnv
 
 -- pretty printer funcs
 
-makeGenericNode name val = Node { name = name, val = val, childs = [] }
+makeGenericNode val = Node { val = val, childs = [] }
+
+makeEmptyNode = makeGenericNode "e"
 
 makeNodeE e = e { nodes = newNode : modNodes }
     where modNodes = tail $ tail $ nodes e
           nodeT  = nodes e !! 0
           nodeE1 = nodes e !! 1
-          newNode = Node { name = "E", childs = [nodeT, nodeE1], val = "" }
+          newNode = Node { val = "E", childs = [nodeT, nodeE1]}
 
 makeNodeT e = e { nodes = newNode : modNodes }
     where modNodes = tail $ tail $ nodes e
           nodeF  = nodes e !! 0
           nodeT1 = nodes e !! 1
-          newNode = Node { name = "T", childs = [nodeF, nodeT1], val = "" }
+          newNode = Node { val = "T", childs = [nodeF, nodeT1]}
 
 makeNodeE1 e = e { nodes = newNode : modNodes }
     where modNodes = tail $ tail $ nodes e
           nodeT  = nodes e !! 0
           nodeE1 = nodes e !! 1
-          nodeOp = makeGenericNode "-" "(+/-)"
-          newNode = Node { name = "E1", childs = [nodeOp, nodeT, nodeE1], val = "" }
+          nodeOp = makeGenericNode "(+/-)"
+          newNode = Node { val = "E1", childs = [nodeOp, nodeT, nodeE1] }
 
 makeNodeE1Empty e = e { nodes = newNode : (nodes e) }
-    where newNode = Node { name = "E1", childs = [], val = "e" }
+    where newNode = Node { val = "E1", childs = [makeEmptyNode] }
 
 makeNodeT1 e = e { nodes = newNode : modNodes }
     where modNodes = tail $ tail $ nodes e
           nodeF  = nodes e !! 0
           nodeT1 = nodes e !! 1
-          nodeOp = makeGenericNode "-" "(*/:)"
-          newNode = Node { name = "T1", childs = [nodeOp, nodeF, nodeT1], val = "" }
+          nodeOp = makeGenericNode "(*/:)"
+          newNode = Node { val = "T1", childs = [nodeOp, nodeF, nodeT1] }
 
 makeNodeT1Empty e = e { nodes = newNode : (nodes e) }
-    where newNode = Node { name = "T1", childs = [], val = "e" }
+    where newNode = Node { val = "T1", childs = [makeEmptyNode] }
 
 makeNodeF token e = e { nodes = newNode : (nodes e) }
-    where newNode = Node { name = "F", childs = [], val = v token }
+    where nodeVal = makeGenericNode $ v token
+          newNode = Node { val = "F", childs = [nodeVal] }
 
 makeNodeFBracket e = e { nodes = newNode : modNodes }
     where modNodes = tail $ nodes e
           nodeE = nodes e !! 0
-          nodeLeftParen = makeGenericNode "-" "("
-          nodeRightParen = makeGenericNode "-" ")"
-          newNode = Node { name = "F"
-                         , childs = [nodeLeftParen, nodeE, nodeRightParen]
-                         , val = "" }
+          nodeLeftParen = makeGenericNode "("
+          nodeRightParen = makeGenericNode ")"
+          newNode = Node { val = "F", childs = [nodeLeftParen, nodeE, nodeRightParen] }
 
 -- <E> ::= <T> <E’>
 -- <T> ::= <F> <T’>
