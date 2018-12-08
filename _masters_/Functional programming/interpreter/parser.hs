@@ -2,9 +2,6 @@ module Parser where
 
 import Text.Read
 import Debug.Trace
-import Data.Maybe
-
-
 import System.IO.Unsafe
 import Data.Unique
 
@@ -159,12 +156,12 @@ parse tokenList = parse_E e
 
 
 printDigraph :: [Node] -> String
-printDigraph nodes = graphvizHeader ++ nodeList ++ edgeList ++ graphvizEnder
+printDigraph ast = graphvizHeader ++ nodeList ++ edgeList ++ graphvizEnder
     where graphvizHeader = "digraph {           \n\
           \  rankdir = LR                       \n\
           \  dummy [label = '', shape = none]   \n"
           graphvizEnder = "}"
-          nodeList = "\n"
+          nodeList = (getNodeNames ast) ++ "\n"
           edgeList = "  <edges>\n"
 
 
@@ -184,6 +181,14 @@ dfs visited nodes =
             else dfs (curr:visited) (nodes ++ adjacent)
 
 
+nodeToDigraphString node =
+    "  " ++ show(nodeId node) ++ " [shape = circle]"
+
+getNodeNames ast = unlines names
+    where names = map nodeToDigraphString dfsNodes
+          dfsNodes = dfs [] ast 
+
+
 
 -- run Parser after Lexer: 
 -- - make sure Lexer's filename is lexer.hs,
@@ -194,7 +199,7 @@ main = do
     -- let p2 = "(5 - 1) * (2 + 1) "
     -- let p2 = "2 * 5 + 3 * 4 + 4 * 6 "
     -- let p2 = "1 + 2 "
-    let p2 = "1 + 2 + 3 * 4 - 5 "
+    let p2 = "1 + (2 + 3) * 4 - 5 "
     let tokens = scan p2
     mapM_ print tokens
 
@@ -211,9 +216,9 @@ main = do
     putStr $ printDigraph ast
 
 
-    print ">>> DFS"
-    let vis = dfs [] ast
-    mapM_ print vis
+    -- print ">>> DFS"
+    -- let vis = getNodeNames ast
+    -- putStr vis
 
 
     
