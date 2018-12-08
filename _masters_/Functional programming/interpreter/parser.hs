@@ -8,27 +8,19 @@ import Data.Unique
 import Lexer
 
 
-
-data Node = Node 
-    { val       :: String
-    , childs    :: [Node]
-    , nodeId    :: Int
-    } deriving (Show, Eq)
-
 data Env = Env
     { tokens    :: [Token]
     , stack     :: [Int]
     , nodes     :: [Node]
     } deriving (Show)
 
-
+-- ================================================
+-- =================  Stack ops  ==================
+-- ================================================
 toInt :: String -> Int
 toInt val = read $ val :: Int
 
 
--- ================================================
--- =================  Stack ops  ==================
--- ================================================
 binOp :: (Int -> Int -> Int) -> Env -> Env
 binOp operation e = e { stack = binOpResult : modStack }
     where n1 = stack e !! 0
@@ -47,12 +39,15 @@ pushOp e token = e { stack = intVal : (stack e) }
 nextToken e = e { tokens = tail $ tokens e }
 
 
-
-
-
 -- ================================================
 -- =================  Node ops  ===================
 -- ================================================
+data Node = Node 
+    { val       :: String
+    , childs    :: [Node]
+    , nodeId    :: Int
+    } deriving (Show, Eq)
+
 uid uniqueId = hashUnique $ unsafePerformIO uniqueId
 
 
@@ -61,8 +56,8 @@ makeLeafNode val nodeId = Node { val = val, childs = [], nodeId = nodeId }
 
 makeBinaryNode val e = e { nodes = newNode : modNodes }
     where modNodes = tail $ tail $ nodes e
-          n1 = nodes e !! 0
-          n2 = nodes e !! 1
+          n1 = nodes e !! 1
+          n2 = nodes e !! 0
           newNode = Node { val = val
                          , childs = [n1, n2]
                          , nodeId = uid newUnique }
@@ -70,8 +65,8 @@ makeBinaryNode val e = e { nodes = newNode : modNodes }
 
 makeTernaryNode val extraNodeVal e = e { nodes = newNode : modNodes }
     where modNodes = tail $ tail $ nodes e
-          n1 = nodes e !! 0
-          n2 = nodes e !! 1
+          n1 = nodes e !! 1
+          n2 = nodes e !! 0
           nExtra = makeLeafNode extraNodeVal (uid newUnique)
           newNode = Node { val = val
                          , childs = [nExtra, n1, n2]
@@ -198,20 +193,12 @@ edgeHelper node childNodes =
     else let edge = nodeToDigraphEdge node (head childNodes)
          in [edge] ++ edgeHelper node (tail childNodes)
 
-getEdges node = unlines edges
+getEdges node = unwords edges
     where edges = edgeHelper node (childs node)
 
 getEdgeList ast = unlines edges
     where edges = map getEdges dfsNodes
           dfsNodes = dfs [] ast
-
-{-
-getEdges x xs =
-    if null $ xs
-    then []
-    else let edge = show(x) ++ " -> " ++ show(head xs)
-         in [edge] ++ getEdges x (tail xs)
--}
 
 
 -- run Parser after Lexer: 
@@ -223,7 +210,7 @@ main = do
     -- let p2 = "(5 - 1) * (2 + 1) "
     -- let p2 = "2 * 5 + 3 * 4 + 4 * 6 "
     -- let p2 = "1 + 2 "
-    let p2 = "1 + (2 + 3) * 4 - 5 "
+    let p2 = "1 + (2 + 3) * 4 - 5 * 4 - 10 + 5 "
     let tokens = scan p2
     mapM_ print tokens
 
@@ -238,16 +225,16 @@ main = do
     print ast
 
     putStrLn "\n>>> Graphviz"
-    putStr $ printDigraph ast
+    putStrLn $ printDigraph ast
 
 
     -- print ">>> DFS"
     -- let vis = dfs [] ast
     -- mapM_ print vis
 
-    -- putStrLn "\n>>> edges to root vertex childs:"
-    -- let edges = getEdges $ head ast
-    -- putStrLn edges
+    --putStrLn "\n>>> edges to root vertex childs:"
+    --let edges = getEdges $ head ast
+    --print edges
 
 
     
