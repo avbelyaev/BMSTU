@@ -10,9 +10,10 @@ import Lexer
 
 data Env = Env
     { tokens    :: [Token]
-    , stack     :: [Int]
-    , nodes     :: [Node]
+    , stack     :: [Int]    -- стек вычислений
+    , nodes     :: [Node]   -- стек вершин, где вершина = терминал/нетерминал
     } deriving (Show)
+
 
 -- ================================================
 -- =================  Stack ops  ==================
@@ -36,68 +37,70 @@ divOp e = binOp (div) e
 pushOp e token = e { stack = intVal : (stack e) }
     where intVal = toInt $ v token
 
+-- убрать верхний токен
 nextToken e = e { tokens = tail $ tokens e }
 
 
 -- ================================================
--- =================  Node ops  ===================
+-- ================  AST builder  =================
 -- ================================================
 data Node = Node 
     { val       :: String
     , childs    :: [Node]
-    , nodeId    :: Int
+    , nodeId    :: Int    -- "UUID" ноды
     } deriving (Show, Eq)
 
-uid uniqueId = hashUnique $ unsafePerformIO uniqueId
+-- deriving (Eq) для 2х вершин с одинаковыми val и childs должен выдавать разные хеши.
+-- для этого добавлен nodeId -- хранящий хеш ноды
+-- при этом вызывать надо для каждого объекта, иначе GHC инлайнит функцию
+-- и она начинает возвращать одно и то же значение
+makeNode val children = Node { val = val
+                             , childs = children
+                             , nodeId = hashUnique $ unsafePerformIO newUnique }
 
+-- создание листовой вершины
+makeLeafNode val = makeNode val []
 
-makeLeafNode val nodeId = Node { val = val, childs = [], nodeId = nodeId }
-
-
+-- создание вершины с 2 дочерними вершинами
 makeBinaryNode val e = e { nodes = newNode : modNodes }
     where modNodes = tail $ tail $ nodes e
           n1 = nodes e !! 1
           n2 = nodes e !! 0
-          newNode = Node { val = val
-                         , childs = [n1, n2]
-                         , nodeId = uid newUnique }
+          newNode = makeNode val [n1, n2]
 
 
+-- -//- с 3 вершинами
 makeTernaryNode val extraNodeVal e = e { nodes = newNode : modNodes }
     where modNodes = tail $ tail $ nodes e
           n1 = nodes e !! 1
           n2 = nodes e !! 0
-          nExtra = makeLeafNode extraNodeVal (uid newUnique)
-          newNode = Node { val = val
-                         , childs = [nExtra, n1, n2]
-                         , nodeId = uid newUnique }
+          nExtra = makeLeafNode extraNodeVal
+          newNode = makeNode val [nExtra, n1, n2]
 
 
+-- создание вершины с удинственной дочерней вершиной
 makeNodeWithChild val childVal e = e { nodes = newNode : (nodes e) }
-    where child = makeLeafNode childVal (uid newUnique)
-          newNode = Node { val = val
-                         , childs = [child]
-                         , nodeId = uid newUnique }
+    where child = makeLeafNode childVal
+          newNode = makeNode val [child]
 
 
+-- создание вершины для правила F ::= ( <E> )
 makeNodeFBracket e = e { nodes = newNode : modNodes}
     where modNodes = tail $ nodes e
           nE = nodes e !! 0
-          nLeftParen = makeLeafNode "(" (uid newUnique)
-          nRightParen = makeLeafNode ")" (uid newUnique)
-          newNode = Node { val = "F"
-                         , childs = [nLeftParen, nE, nRightParen]
-                         , nodeId = uid newUnique }
+          nLeftParen = makeLeafNode "("
+          nRightParen = makeLeafNode ")"
+          newNode = makeNode "F" [nLeftParen, nE, nRightParen]
 
 
 -- ================================================
--- =================   Parser   ===================
+-- ===============  LL(1) Parser   ================
 -- ================================================
--- <E> ::= <T> <E’>
--- <T> ::= <F> <T’>
+-- <E>  ::= <T> <E’>
+-- <T>  ::= <F> <T’>
 -- <E’> ::= + <T> <E’> | - <T> <E’> | e
 -- <T’> ::= * <F> <T’> | / <F> <T’> | e
--- <F> ::= <number> | <var> | ( <E> ) | - <F>
+-- <F>  ::= <number> | <var> | ( <E> ) | - <F>
 
 
 -- <E> ::= <T> <E’>
@@ -130,7 +133,8 @@ parse_T1 e =
         "/" -> makeTernaryNode "T1" "/" (parse_T1 $ divOp $ parse_F $ nextToken e)
         _   -> makeNodeWithChild "T1" "e" e
 
--- <F> ::= <number> | <var> | ( <E> ) | - <F>
+-- <F> ::= <number> | ( <E> ) | - <F>
+-- -<F> not implemented :)
 parse_F :: Env -> Env
 parse_F e =
     let token = head $ tokens e
@@ -145,22 +149,19 @@ parse_F e =
 
 parse :: [Token] -> Env
 parse tokenList = parse_E e
-    where e = Env { tokens = tokenList
-                  , stack = []
-                  , nodes = [] }
+    where e = Env { tokens = tokenList, stack = [], nodes = [] }
 
 
+
+-- ================================================
+-- =============   Pretty printer   ===============
+-- ================================================
 printDigraph :: [Node] -> String
-printDigraph ast = graphvizHeader ++ nodeList ++ edgeList ++ graphvizEnder
-    where graphvizHeader = "digraph { dummy [label = \"\", shape = none] \n"
-          graphvizEnder = "}"
-          nodeList = (getNodeNames ast) ++ "\n"
-          edgeList = (getEdgeList ast) ++ "\n"
-
-
-mydfs graph visited [] = reverse visited
-mydfs graph visited (x:xs) | elem x visited = mydfs graph visited xs
-                           | otherwise = mydfs graph (x:visited) ((graph !! x) ++ xs)
+printDigraph ast = 
+    "digraph { dummy [label = \"\", shape = none]" ++
+        (printNodeList ast) ++ 
+        (printEdgeList ast) ++ 
+    "}"
 
 
 dfs :: [Node] -> [Node] -> [Node]
@@ -174,30 +175,43 @@ dfs visited nodes =
             else dfs (curr:visited) (nodes ++ adjacent)
 
 
+-- shoud produce line: "56 [label = "E1" shape = circle id = "56"]"
 nodeToDigraphVertex node =
     "  " ++ show(nodeId node) ++ 
     " [label = \"" ++ (val node) ++ "\"" ++
     " shape = circle" ++
     " id = \"" ++ show(nodeId node) ++ "\"]"
 
-getNodeNames ast = unlines names
+-- печатает список вершин для AST
+printNodeList :: [Node] -> String
+printNodeList ast = unlines names
     where names = map nodeToDigraphVertex dfsNodes
           dfsNodes = dfs [] ast 
 
+
+-- given: node{ v = 21 }, node{ v = 13 }
+-- should produce line: "21 -> 13"
+nodeToDigraphEdge :: Node -> Node -> String
 nodeToDigraphEdge nodeFrom nodeTo =
     "  " ++ show(nodeId nodeFrom) ++ " -> " ++ show(nodeId nodeTo)
 
-edgeHelper node childNodes =
-    if null childNodes
-    then []
-    else let edge = nodeToDigraphEdge node (head childNodes)
-         in [edge] ++ edgeHelper node (tail childNodes)
-
-getEdges node = unwords edges
+-- печатает все ребра для данной вершины
+-- given: node{ v = 21, childNodes = [13, 18, 20] }
+-- should produce line: "21 -> 13, 21 -> 18, 21 -> 20"
+getOutgoingEdges :: Node -> String
+getOutgoingEdges node = unwords edges
     where edges = edgeHelper node (childs node)
+          edgeHelper node childNodes =
+                if null childNodes
+                then []
+                else let edge = nodeToDigraphEdge node (head childNodes)
+                     in [edge] ++ edgeHelper node (tail childNodes)
 
-getEdgeList ast = unlines edges
-    where edges = map getEdges dfsNodes
+-- печатает лист ребер для данного AST
+printEdgeList :: [Node] -> String
+printEdgeList ast = unlines filteredEmptyLines
+    where filteredEmptyLines = filter (\line -> not $ null line) edges
+          edges = map getOutgoingEdges dfsNodes
           dfsNodes = dfs [] ast
 
 
@@ -206,25 +220,24 @@ getEdgeList ast = unlines edges
 -- - comment Lexer's `main`
 -- - do `runhaskell parser.hs`
 main = do
-    putStrLn ">>> scanning"
-    -- let p2 = "(5 - 1) * (2 + 1) "
+    putStrLn ">>> scanning (line should end with space!)"
+    let p2 = "1 + 2 "
     -- let p2 = "2 * 5 + 3 * 4 + 4 * 6 "
-    -- let p2 = "1 + 2 "
-    let p2 = "1 + (2 + 3) * 4 - 5 * 4 - 10 + 5 "
+    -- let p2 = "1 + ((2 + 3) * 1337 * (4 - 5)) * 4 - (1488 / 10 + 5) + 999 "
     let tokens = scan p2
     mapM_ print tokens
 
     putStrLn "\n>>> parsing"
     let res = parse tokens
 
-    putStrLn "\n>>> result"
+    putStrLn "\n>>> result stack"
     print $ stack res
 
     putStrLn "\n>>> AST"
     let ast = nodes res
     print ast
 
-    putStrLn "\n>>> Graphviz"
+    putStrLn "\n>>> Graphviz (go webgraphviz.com)"
     putStrLn $ printDigraph ast
 
 
@@ -232,9 +245,10 @@ main = do
     -- let vis = dfs [] ast
     -- mapM_ print vis
 
-    --putStrLn "\n>>> edges to root vertex childs:"
-    --let edges = getEdges $ head ast
-    --print edges
+    -- putStrLn "\n>>> edges to root vertex childs:"
+    -- let root = head ast
+    -- let edges = getOutgoingEdges root
+    -- print edges
 
 
     
