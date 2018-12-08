@@ -3,6 +3,7 @@ module Parser where
 
 import Text.Read
 import Debug.Trace
+import Data.Maybe
 
 import Lexer
 
@@ -13,7 +14,15 @@ data Env = Env
     } deriving (Show)
 
 
-toInt s = read s :: Int
+isInteger s = case reads s :: [(Integer, String)] of
+    [(_, "")] -> True
+    _         -> False
+
+
+toInt :: Token -> Maybe Int
+toInt tok = case (isInteger $ v tok) of
+    True    -> Just (read $ v tok :: Int)
+    False   -> Nothing
 
 
 binOp :: (Int -> Int -> Int) -> Env -> Env
@@ -35,6 +44,11 @@ nextToken e = modEnv
     where nextTok = head $ tokens e
           modEnv = e { tokens = tail $ tokens e }
 
+-- <E> ::= <T> <E’>.
+-- <T> ::= <F> <T’>.
+-- <E’> ::= + <T> <E’> | - <T> <E’> | .
+-- <T’> ::= * <F> <T’> | / <F> <T’> | .
+-- <F> ::= <number> | <var> | ( <E> ) | - <F> .
 
 parse :: [Token] -> Env
 parse tokenList = parse_E e
@@ -44,46 +58,47 @@ parse tokenList = parse_E e
 -- <E> ::= <T> <E’>.
 parse_E :: Env -> Env
 parse_E e = 
-    trace " E -> T E1" (parse_E1 $ parse_T e)
+    parse_E1 $ trace " . E" (parse_T e)
 
 
 -- <T> ::= <F> <T’>.
 parse_T :: Env -> Env
 parse_T e =
-    trace " T -> F T1" (parse_T1 $ parse_F e)
+    parse_T1 $ trace " . . T" (parse_F e)
 
 
 -- <E’> ::= + <T> <E’> | - <T> <E’> | .
 parse_E1 :: Env -> Env
 parse_E1 e = 
     let token = head $ tokens e
-        op = trace ("E1:" ++ show token) (v $ token)
+        op = v $ token
     in case op of
-        "+" -> parse_E1 $ addOp $ parse_T $ nextToken e
-        "-" -> parse_E1 $ subOp $ parse_T $ nextToken e
-        _   -> e
+        "+" -> parse_E1 $ addOp $ parse_T $ trace " . . . E1 +" (nextToken e)
+        "-" -> parse_E1 $ subOp $ parse_T $ trace " . . . E1 -" (nextToken e)
+        _   -> trace " . . . E1 e" e
 
 
 -- <T’> ::= * <F> <T’> | / <F> <T’> | .
 parse_T1 :: Env -> Env
 parse_T1 e = 
     let token = head $ tokens e
-        op = trace ("T1:" ++ show token) (v $ token)
+        op = v $ token
     in case op of
-        "*" -> parse_T1 $ mulOp $ parse_F $ nextToken e
-        "/" -> parse_T1 $ divOp $ parse_F $ nextToken e
-        _   -> trace "T1 skip" e
+        "*" -> parse_T1 $ mulOp $ parse_F $ trace " . . . T1 *" (nextToken e)
+        "/" -> parse_T1 $ divOp $ parse_F $ trace " . . . T1 /" (nextToken e)
+        _   -> trace " . . . T1 e" e
 
 
 -- <F> ::= <number> | <var> | ( <E> ) | - <F>.
 parse_F :: Env -> Env
 parse_F e =
     let token = head $ tokens e
-        tokType = trace (" F:" ++ show token) (t $ token)
+        tokType = t $ token
+        maybeIntToken = toInt token
     in case tokType of
-        NumberToken     -> nextToken $ pushOp e (toInt $ v token)
+        NumberToken     -> nextToken $ trace (" . . . F  " ++ v token) (pushOp e (fromJust maybeIntToken))
         BracketToken    -> nextToken $ parse_E $ nextToken e
-        _               -> e
+        _               -> error "fuck"
 
 
 
@@ -92,7 +107,9 @@ parse_F e =
 -- - comment Lexer's `main`
 -- - do `runhaskell parser.hs`
 main = do
-    let p2 = "(5 - 1) * 2 + 1 "
+    --let p2 = "(5 - 1) * (2 + 1) "
+    -- let p2 = "2 * 5 + 3 * 4 + 4 * 6 "
+    let p2 = "1 + 2 + 3 - (4 * 5) + 6 "
     let tokens = scan p2
     mapM_ print tokens
 
