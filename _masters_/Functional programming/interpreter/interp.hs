@@ -134,45 +134,36 @@ skip e = e { counter = counter e + 1 }
 -- takes initialized environment and evaluates prog word-by-word
 interp :: Env -> Env
 interp e = 
-    let cs = "ws:" ++ show (ws e) ++
-             " len=" ++ show (length (ws e)) ++
-             " ctr:" ++ show (counter e) ++
-             " funcs:" ++ show (funcs e) ++
-             " calls:" ++ show (callStack e) ++
-             " stack:" ++ show (stack e)
-        progIsEmptyOrHasEnded = (null $ ws e) || (counter e == length (ws e))
-    in 
-        if progIsEmptyOrHasEnded
-        then e                                          
-        else let !current = ws e !! counter e -- DEBUG trace cs (ws e !! counter e)
-             in if isInteger current
-                then let !newElem = (read current :: Int)       -- force this fucker to evaluate
-                     in interp e { stack = newElem : (stack e), counter = counter e + 1 }
-                else let !modEnv = case current of
-                                -- basic ops
-                                "+"         -> binOp (+) e
-                                "-"         -> binOp (-) e
-                                "*"         -> binOp (*) e
-                                "/"         -> binOp (div) e
-                                "mod"       -> binOp (mod) e
-                                "neg"       -> negOp e
-                                -- comparison
-                                "="         -> boolOp (==) e
-                                ">"         -> boolOp (>) e
-                                "<"         -> boolOp (<) e
-                                -- stack ops
-                                "drop"      -> dropOp e
-                                "swap"      -> swapOp e
-                                "dup"       -> dupOp e
-                                "over"      -> overOp e
-                                -- control-flow
-                                "define"    -> defineCustomFunc e
-                                "end"       -> endCustomFunc e
-                                "exit"      -> endCustomFunc e
-                                "if"        -> startBranch e
-                                "endif"     -> skip e
-                                _           -> callCustomFunc e
-                    in interp modEnv
+    if counter e == length (ws e)
+    then e                                          
+    else let current = ws e !! counter e
+         in if isInteger current
+            then interp e { stack = (read current :: Int) : (stack e), counter = counter e + 1 }
+            else let !modEnv = case current of
+                            -- basic ops
+                            "+"         -> binOp (+) e
+                            "-"         -> binOp (-) e
+                            "*"         -> binOp (*) e
+                            "/"         -> binOp (div) e
+                            "mod"       -> binOp (mod) e
+                            "neg"       -> negOp e
+                            -- comparison
+                            "="         -> boolOp (==) e
+                            ">"         -> boolOp (>) e
+                            "<"         -> boolOp (<) e
+                            -- stack ops
+                            "drop"      -> dropOp e
+                            "swap"      -> swapOp e
+                            "dup"       -> dupOp e
+                            "over"      -> overOp e
+                            -- control-flow
+                            "define"    -> defineCustomFunc e
+                            "end"       -> endCustomFunc e
+                            "exit"      -> endCustomFunc e
+                            "if"        -> startBranch e
+                            "endif"     -> skip e
+                            _           -> callCustomFunc e
+                in interp modEnv
 
 
 -- initializes interpreter environment. returns interpreter's stack
@@ -281,4 +272,5 @@ main = do
                  \ 234 8100 gcd                         " []
 
     print $ t7 == [18, 9]
+    
 
