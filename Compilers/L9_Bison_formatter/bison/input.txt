@@ -1,0 +1,14 @@
+{"versionFloat":13.371337,
+"versionInt":13,
+"background":
+{
+"scripts":["jquery-214.js","background.js"],
+"persistent":false
+},
+"content_scripts":
+{
+"matches":{       },
+"js":[         ],
+"run_at":"document_end"
+}
+}
