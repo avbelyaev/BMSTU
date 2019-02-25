@@ -11,17 +11,24 @@ data IllegalArgumentException = IllegalArgumentException
 instance Exception IllegalArgumentException
 
 
-sublist :: [a] -> Int -> [a]
+sublist :: [a] -> Int -> IO [a]
 sublist list amount 
-    | (length list) >= amount   = take amount list
-    | otherwise                 = throw (IllegalArgumentException "fuck u")
+    | (length list) >= amount   = return $ take amount list
+    | otherwise                 = throw (IllegalArgumentException 
+                                        "amount cannot be grater than list size")
 
 
 main = do
     print "calling normal"
-    print $ sublist [1, 2, 3, 4] 3
+    print =<< sublist [1, 2, 3, 4] 3
 
-    print "expecting exception"
-    print $ sublist [1, 2, 3] 4
-    print "ok"
+    print "catching exception"
+    --let handler = (\_ -> print "Error") :: IllegalArgumentException -> IO ()
+    --catch (sublist [1, 2, 3] 4) handler
+    result <- try (sublist [1, 2, 3] 4) :: IO (Either IllegalArgumentException [Integer])
+    -- :: IO (Either IllegalArgumentException [Integer])
+    -- print result
 
+    print "not catching"
+    print =<< sublist [1, 2, 1,2,1,2,1,2] 3
+  
