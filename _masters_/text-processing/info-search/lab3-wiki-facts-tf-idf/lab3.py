@@ -25,7 +25,7 @@ FACTS = [
 
 VOCABULARY = set()
 
-RESULTS_TO_OUTPUT = 10
+RESULTS_TO_OUTPUT = 5
 
 
 # both document and query can be represented as vector
@@ -35,6 +35,7 @@ class Vectorizable:
         self.sentence = sentence
         self.words = sentence.split(' ')
         self.vector = {}
+        self.tfidf_vector = {}
 
     # weight of term in the document is its frequency
     def vectorize(self):
@@ -115,24 +116,23 @@ def tf_idf(query: Vectorizable, docs: list) -> list:
         return math.log(len(docs) / df)
 
     # count TFIDF weight for each document
-    tfidf_doc_weights = {}
     for doc in docs:
         weight = defaultdict(int)
         for word in doc.words:
             weight[word] = tf(word, doc) * idf(word)
-        tfidf_doc_weights[doc] = weight
+        doc.tfidf_vector = weight
 
     # count TFIDF for a query
-    tfidf_query_weight = defaultdict(int)
+    weight = defaultdict(int)
     for word in query.words:
-        tfidf_query_weight[word] = tf(word, query) * idf(word)
+        weight[word] = tf(word, query) * idf(word)
+    query.tfidf_vector = weight
 
     # now just apply cosine similarity like for vector-space model
     cos_similarity = {}
     for doc in docs:
-        doc_weight = tfidf_doc_weights[doc]
-        multiplied_norms = norm(tfidf_query_weight) * norm(doc_weight)
-        cos_similarity[doc] = scalar_product(tfidf_query_weight, doc_weight) / multiplied_norms
+        multiplied_norms = norm(query.tfidf_vector) * norm(doc.tfidf_vector)
+        cos_similarity[doc] = scalar_product(query.tfidf_vector, doc.tfidf_vector) / multiplied_norms
 
     sorted_by_weight = sorted(cos_similarity.items(), key=lambda doc: doc[1], reverse=True)
     return sorted_by_weight[:RESULTS_TO_OUTPUT]
@@ -168,16 +168,16 @@ def main():
     for q in queries:
         q.vectorize()
         matched_docs = vector_space_model(q, docs)
-        print(q)
+        print('\hline \n \\bold{' + q.sentence + '} \\\\ \n \hline')
         for match in matched_docs:
-            print(f'\t{match[1]:.3f} {match[0]}')
+            print(f'\t{match[1]:.3f} {match[0]} \\\\')
 
     print('TF-IDF')
     for q in queries:
         matched_docs = tf_idf(q, docs)
-        print(q)
+        print('\hline \n \\bold{' + q.sentence + '} \\\\ \n \hline')
         for match in matched_docs:
-            print(f'\t{match[1]:.3f} {match[0]}')
+            print(f'\t{match[1]:.3f} {match[0]} \\\\')
 
 
 if __name__ == '__main__':
