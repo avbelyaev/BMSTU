@@ -1,40 +1,21 @@
 import numpy
-# import pandas as pd
 import pymorphy2
 import io
 import re
 import math
 
 
-def scalar_product(v1: list, v2: list):
+def scalar(v1: list, v2: list):
     p = 0
     i = 0
-    assert len(v1) == len(v2)
     while i < len(v1):
         p += v1[i] * v2[i]
         i += 1
-    # for w in v1.keys():
-    #     p += v1[w] * v2[w]
     return p
 
 
-def norm(vect: list) -> float:
-    return math.sqrt(scalar_product(vect, vect))
-
-
-def cosine(v1: list, v2: list) -> float:
-    n1 = norm(v1)
-    n2 = norm(v2)
-    if 0 == n1 or 0 == n2:
-        print('stop')
-    return scalar_product(v1, v2) / (n1 * n2)
-
-
-def clean_up(sentence: str) -> str:
-    whitespaced = re.sub('[^а-яё]', ' ', sentence.lower())
-    splited = re.split('\s+', whitespaced)
-    joined = ' '.join(splited)
-    return joined.strip()
+def cosine(v1, v2):
+    return scalar(v1, v2) / math.sqrt(scalar(v1, v1) * scalar(v2, v2))
 
 
 file = io.open('input.txt', encoding='utf-8')
@@ -47,11 +28,14 @@ for line in fileLines:
     allSentences += line.split(".")
 
 for i in range(0, len(allSentences)):
-    allSentences[i] = clean_up(allSentences[i])
+    whitespaced = re.sub('[^а-яё]', ' ', allSentences[i].lower())
+    splited = re.split('\s+', whitespaced)
+    allSentences[i] = ' '.join(splited).strip()
 
-allSentences = list(filter(lambda sent: ('' != sent
-                                         and not sent.isspace()
-                                         and len(sent.split(' ')) > 2), allSentences))
+for sent in allSentences:
+    if '' == sent or sent.isspace() or len(sent.split(' ')) < 3:
+        while sent in allSentences:
+            allSentences.remove(sent)
 
 
 dictionary = []
@@ -94,17 +78,17 @@ for i in range(0, sentCount):
 
 # print (count)
 
-requests = [
-    'Прежде существовали электрические суда (туеры), получавшие энергию от контактной сети, подобно троллейбусам',
-    'ЮАР стала первой в мире страной, добровольно отказавшейся от использования ядерного оружия',
-    'Христианские миссионеры использовали деревянных кукол для посрамления безнравственных женщин'
-]
+# requests = [
+#     'Прежде существовали электрические суда (туеры), получавшие энергию от контактной сети, подобно троллейбусам',
+#     'ЮАР стала первой в мире страной, добровольно отказавшейся от использования ядерного оружия',
+#     'Христианские миссионеры использовали деревянных кукол для посрамления безнравственных женщин'
+# ]
 
-for request in requests:
+while 1:
     print("введите запрос или пустую строку чтобы закончить")
-    # request = input()
-    # if request == "":
-    #     exit(0)
+    request = input()
+    if request == "":
+        exit(0)
 
     reqVec = numpy.zeros((1, wordCount))
 
@@ -152,7 +136,6 @@ for request in requests:
         resSentences.append(allSentences[cosDistance[i][1]])
 
 
-    print('\n\n\n')
     print(request)
 
     i = 0
