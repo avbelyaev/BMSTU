@@ -70,7 +70,7 @@ def clean_up_sentence(s: str) -> str:
 
 
 def read_sentences(filename: str) -> list:
-    text = open(filename, 'r').read()
+    text = open(filename, 'r', encoding='UTF-8').read()
     preprocessed = re.sub(r'[,:;-]', ' ', text)
     sentences = nltk.sent_tokenize(preprocessed)                                # split into sentences
     clean_sents = list(map(lambda s: clean_up_sentence(s), sentences))          # clean up
