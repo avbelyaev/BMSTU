@@ -18,7 +18,7 @@ COLLECTION = []
 
 RESULTS_TO_OUTPUT = 5
 
-LAMBDA = 0.9
+LAMBDA = 0.5
 
 
 def lang_model(query: str, docs: list) -> list:
@@ -26,10 +26,7 @@ def lang_model(query: str, docs: list) -> list:
         return COLLECTION.count(term) / len(COLLECTION)
 
     def document_model(term: str, document: list) -> float:
-        if 0 == document.count(term):
-            return COLLECTION.count(term) / len(COLLECTION)     # cf / cs
-        else:
-            return document.count(term) / len(document)         # tf(t,d) / len(d)
+        return document.count(term) / len(document)         # tf(t,d) / len(d)
 
     similarity = {}
     for doc in docs:
@@ -65,9 +62,12 @@ def main():
 
     for q in queries:
         matched_docs = lang_model(q, sentences)
-        print(q)
+        # print(q)
+        # for match in matched_docs:
+        #     print(f'\t{match[1]} {match[0]}')
+        print('\hline \n - & ' + q + ' \\\\ \n \hline')
         for match in matched_docs:
-            print(f'\t{match[1]} {match[0]}')
+            print(f'\t{match[1]} & {match[0]} \\\\')
 
 
 if __name__ == '__main__':
