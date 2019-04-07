@@ -15,6 +15,7 @@ SODIUM_LAURYL_SULFATE = [
     'C','C','C','C','C','C','C','C','C','C','C','C','O','C','C','OS(=O)([O-])=O.[Na+]'
 ]
 
+# при мутации элементы меняются на одни из следующих
 HEAD = ['OS(=O)([O-])=O.[Na+]', 'C(=O)[O-].[K+]', 'C(=O)[O-].[Na+]', 'C(=O)[O-]']
 BODY = ['N', 'C', 'O']
 TAIL = ['C']
@@ -36,11 +37,17 @@ CONVERGENCE_DELTA = 0.01
 
 
 class Individual:
+    """
+    [C][C] ... [SO4]
+    хвост ... голова
+    """
+
     def __init__(self, molecules: list):
         self.elems = molecules
         self.head = molecules[len(molecules) - 1]
         self.tail = molecules[0]
         self.glb_score = 0
+        self.compute_glb_score()
 
     def compute_glb_score(self):
         self.glb_score = sum([RATING[elem] for elem in self.elems])
@@ -74,17 +81,13 @@ class Individual:
         self.elems[pos] = new_body_element
 
     def __str__(self):
-        elems_as_str = ''.join(self.elems)
-        return f'[{self.glb_score}] {elems_as_str}'
+        return f'[{self.glb_score}] {"".join(self.elems)}'
 
     def __repr__(self):
         return self.__str__()
 
 
-# TODO fixme
-sulfate = Individual(SODIUM_LAURYL_SULFATE)
-sulfate.compute_glb_score()
-GOAL_GLB = sulfate.glb_score
+GOAL_GLB = Individual(SODIUM_LAURYL_SULFATE).glb_score
 
 
 def pick_random_element(elements: list):
@@ -115,30 +118,25 @@ def crossover(parent1: Individual, parent2: Individual) -> (Individual, Individu
 
     child1, child2 = Individual(child1_elems), Individual(child2_elems)
 
-    print(f'crossover[{crossover_point}]')
+    print(f'crossover')
     print(f'parnts: {parent1} + {parent2}\nchilds: {child1} , {child2}')
     return child1, child2
 
 
 def mutation(individs: list):
     # pick range of individuals to mutate
-    mutate_from, mutate_to = pick_random_range(individs)
-    print(f'mutating [{mutate_from}..{mutate_to}]')
-    for i in range(mutate_from, mutate_to):
+    _, mutate_to = pick_random_range(individs)
+    print(f'mutating [0..{mutate_to}]')
+    for i in range(mutate_to):
         individs[i].mutate()
-
-
-def has_converged(individs: list) -> bool:
-    most_fit = individs[0]
-    return abs(most_fit.glb_score - GOAL_GLB) < CONVERGENCE_DELTA
 
 
 def main():
     individuals = [Individual(s) for s in INITIAL_POPULATION]
 
-    stearate = Individual(SODIUM_STEARATE)
-    stearate.mutate()
-    individuals.append(stearate)
+    mutated_stearate = Individual(SODIUM_STEARATE)
+    mutated_stearate.mutate()
+    individuals.append(mutated_stearate)
 
     i = 0
     while True:
@@ -150,11 +148,12 @@ def main():
         # sort individuals by fitness score
         selection(individuals)
 
-        # check algorithm convergence
-        if has_converged(individuals):
+        # check convergence
+        most_fit = individuals[0]
+        if abs(most_fit.glb_score - GOAL_GLB) <= CONVERGENCE_DELTA:
             break
 
-        # get most fit and do crossover
+        # get most fit parents and do crossover
         parent1, parent2 = individuals[0], individuals[1]
         (child1, child2) = crossover(parent1, parent2)
 
