@@ -4,6 +4,8 @@ INITIAL_POPULATION = [
     '11110000', '00001111'
 ]
 
+MUTATION_PERCENTAGE = 15
+
 
 class Individual:
     def __init__(self, string: str):
@@ -20,11 +22,9 @@ class Individual:
             mutate_from, mutate_to = mutate_to, mutate_from
 
         mutated_str = self.str
-        i = mutate_from
-        while i < mutate_to:
+        for i in range(mutate_from, mutate_to):
             mutated_char = '1' if '0' == self.str[i] else '0'
             mutated_str = setCharAt(mutated_str, mutated_char, i)
-            i += 1
 
         print(f'mutation: {self.str} -> {mutated_str}')
         self.str = mutated_str
@@ -56,11 +56,9 @@ def crossover(parent1: Individual, parent2: Individual) -> (Individual, Individu
 
     child1_str = parent1_str
     child2_str = parent2_str
-    i = 0
-    while i < crossover_point:
+    for i in range(crossover_point):
         child1_str = setCharAt(child1_str, parent2_str[i], i)
         child2_str = setCharAt(child2_str, parent1_str[i], i)
-        i += 1
 
     print(f'crossover[{crossover_point}]')
     print(f'parnts: {parent1_str} + {parent2_str}\nchilds: {child2_str} , {child1_str}')
@@ -68,15 +66,14 @@ def crossover(parent1: Individual, parent2: Individual) -> (Individual, Individu
 
 
 def mutation(individs: list):
-    to_be_mutated = randint(1, len(individs) - 1)
-    i = 0
-    while i < to_be_mutated:
+    to_be_mutated = int(1 + len(individs) / 100 * MUTATION_PERCENTAGE)
+    print(f'mutating {to_be_mutated} of {len(individs)}')
+    for i in range(to_be_mutated):
         individs[i].mutate()
-        i += 1
 
 
 def has_converged(individs: list) -> bool:
-    return individs[0].fitness >= 6
+    return individs[0].fitness == 8
 
 
 def main():
