@@ -1,8 +1,9 @@
 from random import randint
 
 # генетический алгоритм.
-# пытаемся получить лаурил сульфат натрия из стеарата натрия
-# функция фитнесса - GLB
+# дан стеарата натрия
+# пытаемся получить вещество максимально близкое к лаурил сульфат натрия по HLB
+# функция фитнесса - HLB (гидро-липофильный баланс)
 
 
 # @formatter:off
@@ -20,6 +21,7 @@ HEAD = ['OS(=O)([O-])=O.[Na+]', 'C(=O)[O-].[K+]', 'C(=O)[O-].[Na+]', 'C(=O)[O-]'
 BODY = ['N', 'C', 'O']
 TAIL = ['C']
 
+# https://en.wikipedia.org/wiki/Hydrophilic-lipophilic_balance
 RATING = {
     'OS(=O)([O-])=O.[Na+]': 38.7,   # SO4Na
     'C(=O)[O-].[K+]':       21.1,   # COOK
@@ -33,7 +35,7 @@ RATING = {
 
 
 INITIAL_POPULATION = [SODIUM_STEARATE]
-CONVERGENCE_DELTA = 0.01
+CONVERGENCE_DELTA = 0.8
 
 
 class Individual:
@@ -46,11 +48,11 @@ class Individual:
         self.elems = molecules
         self.head = molecules[len(molecules) - 1]
         self.tail = molecules[0]
-        self.glb_score = 0
-        self.compute_glb_score()
+        self.hlb_score = 0
+        self.compute_hlb_score()
 
-    def compute_glb_score(self):
-        self.glb_score = sum([RATING[elem] for elem in self.elems])
+    def compute_hlb_score(self):
+        self.hlb_score = sum([RATING[elem] for elem in self.elems]) + 7
 
     def mutate(self):
         should_mutate_tail = lambda position: 0 == position
@@ -81,13 +83,13 @@ class Individual:
         self.elems[pos] = new_body_element
 
     def __str__(self):
-        return f'[{self.glb_score}] {"".join(self.elems)}'
+        return f'[{self.hlb_score}] {"".join(self.elems)}'
 
     def __repr__(self):
         return self.__str__()
 
 
-GOAL_GLB = Individual(SODIUM_LAURYL_SULFATE).glb_score
+GOAL_GLB = Individual(SODIUM_LAURYL_SULFATE).hlb_score
 
 
 def pick_random_element(elements: list):
@@ -105,7 +107,7 @@ def pick_random_range(elements: list):
 
 def selection(individs: list):
     print('selection')
-    individs.sort(key=lambda ind: abs(GOAL_GLB - ind.glb_score))
+    individs.sort(key=lambda ind: abs(GOAL_GLB - ind.hlb_score))
 
 
 def crossover(parent1: Individual, parent2: Individual) -> (Individual, Individual):
@@ -143,14 +145,14 @@ def main():
         print(f'--- gen {i} ---')
 
         # count fitness
-        [ind.compute_glb_score() for ind in individuals]
+        [ind.compute_hlb_score() for ind in individuals]
 
         # sort individuals by fitness score
         selection(individuals)
 
         # check convergence
         most_fit = individuals[0]
-        if abs(most_fit.glb_score - GOAL_GLB) <= CONVERGENCE_DELTA:
+        if abs(most_fit.hlb_score - GOAL_GLB) <= CONVERGENCE_DELTA:
             break
 
         # get most fit parents and do crossover
