@@ -35,19 +35,17 @@ RATING = {
 
 
 INITIAL_POPULATION = [SODIUM_STEARATE]
-CONVERGENCE_DELTA = 0.8
+CONVERGENCE_DELTA = 0.1
 
 
 class Individual:
     """
-    [C][C] ... [SO4]
-    хвост ... голова
+    [C][C] ... [C][O][O][N] ... [SO4]
+    хвост  ...      тело    ... голова
     """
 
     def __init__(self, molecules: list):
         self.elems = molecules
-        self.head = molecules[len(molecules) - 1]
-        self.tail = molecules[0]
         self.hlb_score = 0
         self.compute_hlb_score()
 
@@ -64,23 +62,21 @@ class Individual:
         print(f'mutation: {self} -> ', end='')
         for i in range(mutate_from, mutate_to + 1):
             if should_mutate_head(i):
-                self.__set_head(pick_random_element(HEAD))
+                self.__mutate_head()
             elif should_mutate_tail(i):
-                self.__set_tail(pick_random_element(TAIL))
+                self.__mutate_tail()
             else:
-                self.__set_body_at(pick_random_element(BODY), i)
+                self.__mutate_body_at(i)
         print(self)
 
-    def __set_head(self, new_head_element: str):
-        self.head = new_head_element
-        self.elems[len(self.elems) - 1] = new_head_element
+    def __mutate_head(self):
+        self.elems[len(self.elems) - 1] = pick_random_element(HEAD)
 
-    def __set_tail(self, new_tail_element: str):
-        self.tail = new_tail_element
-        self.elems[0] = new_tail_element
+    def __mutate_tail(self):
+        self.elems[0] = pick_random_element(TAIL)
 
-    def __set_body_at(self, new_body_element: str, pos: int):
-        self.elems[pos] = new_body_element
+    def __mutate_body_at(self, pos: int):
+        self.elems[pos] = pick_random_element(BODY)
 
     def __str__(self):
         return f'[{self.hlb_score}] {"".join(self.elems)}'
@@ -166,7 +162,7 @@ def main():
         mutation(individuals)
         i += 1
 
-    print('=== Done ===')
+    print(f'=== Done in generation #{i} ===')
     for individ in individuals[:10]:
         print(individ)
 
