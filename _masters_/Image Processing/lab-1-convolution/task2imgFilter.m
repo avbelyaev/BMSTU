@@ -21,15 +21,15 @@ robin5_x = [ -1 0 1; -2 0 2; -1 0 1];
 robin5_y = [ 0 1 2; -1 0 1; -2 1 0];
     
 
-w_x = conv2(img, robin5_x); 
-w_y = conv2(img, robin5_y);
+w_x = conv2(img, sobelm_x); 
+w_y = conv2(img, sobelm_y);
 W = sqrt(double(w_x.^2 + w_y.^2)); % wiki formula
 
 % draw image convolution
-imwrite(W, gray(256), 'robin5.png');
+imwrite(W, gray(256), 'sobelm.png');
 % imshow(W, []);
 
 % draw convolution plot
 f = figure();
-plot(W);
-saveas(gcf, 'robin5-p.png');
+mesh(W);
+saveas(gcf, 'sobelm-p.png');
