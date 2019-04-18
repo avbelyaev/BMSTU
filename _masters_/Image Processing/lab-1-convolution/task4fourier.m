@@ -1,18 +1,33 @@
 clear all;
-clc;
 
-pi=3.14;
-n = 5;
-sum=0;
-y=sinh(x); % function we want 
-for n=1:n
-    a0=(1/pi)*int(y,x,-pi,pi);
-    an=(1/pi)*int(y*cos(n*x),x,-pi,pi); 
-    bn=(1/pi)*int(y*sin(n*x),x,-pi,pi); 
-    sum=sum+(an*cos(n*x)+bn*sin(n*x));
+N = 100;    % steps
+
+x = -pi;    % from
+step = 0.05;
+x_max = pi; % to
+
+i = 1;
+while x < x_max
+    ys(i) = fourier(x);
+    xs(i) = x;
+    
+    x = x + step;
+    i = i + 1;
 end
 
-ezplot(x,y,[-pi,pi]);
-grid on;
-hold on; 
-ezplot(x,(sum+a0/2),[-pi,pi]);
+% draw convolution plot
+f = figure();
+plot(xs, ys);
+filename = ['fr-' num2str(N) '.png'];
+saveas(gcf, filename);
+
+
+function sum = fourier(x)
+    sum = 0;
+    for n = 1:N
+        a0 = (pi*x - x^2 / 2) / (2*pi);
+        an = (2*sin(pi*n / 2)) / n;
+        bn = (2*pi*n*cos(pi*n / 2) - 4*sin(pi*n / 2)) / (pi*n^2);
+        sum = sum + a0 + (an*cos(n*x) + bn*sin(n*x));
+    end
+end
