@@ -5,23 +5,27 @@ N = length(x);
 
 for i = 1:N
     f(i) = func(x(i));
-    g(i) = sin(x(i));
+    g(i) = 1 / (pi*(1 + x(i)^2));
 end
 
-w = conv(f, g);
-fprintf('max: %s', max(w));
+w = conv(f, g, 'same');
+fprintf('max: %f', max(w));
 
-% plot F, G
+% draw F, G
 figure(1)
 plot(x, g);
-hold on % draw multiple plots in same window
+xlim([-10 10]);
+hold on     % draw multiple plots in same window
 plot(x, f);
 legend('g(x)', 'f(x)');
 hold off
+saveas(gcf, 'fg.png');
 
-% plot convolution
+% draw convolution
 figure(2)
-plot(x, f);
+plot(x, w);
+xlim([-10 10]);
+saveas(gcf, 'fg-conv.png');
 
 
 function y = func(x)
