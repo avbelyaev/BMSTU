@@ -1,5 +1,7 @@
 from rdkit import Chem
 from rdkit.Chem import AllChem, Draw
+import rdkit.Chem.rdMolAlign as ChemAlign
+from rdkit.Chem import PyMol
 
 
 def main():
@@ -26,6 +28,7 @@ def main():
     refMol2 = AllChem.MMFFGetMoleculeProperties(mols[1])
 
     pyO3A = AllChem.GetO3A(mols[0], mols[1], refMol1, refMol2)
+    print('align')
     print(pyO3A.Align())
     print(pyO3A.Matches())
 
@@ -39,9 +42,19 @@ def main():
     ff.Initialize()
     ff.Minimize(maxIts=200)
 
+    rmsd = ChemAlign.AlignMol(mols[0], mols[1], atomMap=pyO3A.Matches())
+    print('rmsd')
+    print(rmsd)
 
     print('energy')
     print(ff.CalcEnergy())
+
+
+    #  launch pymol in server mode. it lays in anaconda/bin. 'pymol -R'
+    v = PyMol.MolViewer()
+    v.ShowMol(mols[0])
+    # v.ShowMol(mols[1])
+    v.GetPNG(h=200)
 
 
 if __name__ == '__main__':
