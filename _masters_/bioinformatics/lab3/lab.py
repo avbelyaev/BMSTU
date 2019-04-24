@@ -11,11 +11,12 @@ def main():
     smiles = file.read().split('\n')
     mols = [Chem.MolFromSmiles(m) for m in smiles][:2]
     mols = [Chem.AddHs(m) for m in mols]
+
     i = 0
     for m in mols:
         print(m)
         AllChem.EmbedMolecule(m)
-        AllChem.MMFFOptimizeMolecule(m)
+        AllChem.MMFFOptimizeMolecule(m, maxIters=200)
         Chem.MolToMolFile(m, '{0}.mol'.format(i))
 
         Draw.MolToFile(m, 'm{0}.png'.format(i))
@@ -36,8 +37,10 @@ def main():
     # ff.Minimize()
     ff = AllChem.UFFGetMoleculeForceField(mols[0])
     ff.Initialize()
-    ff.Minimize()
-    print('enerty')
+    ff.Minimize(maxIts=200)
+
+
+    print('energy')
     print(ff.CalcEnergy())
 
 
