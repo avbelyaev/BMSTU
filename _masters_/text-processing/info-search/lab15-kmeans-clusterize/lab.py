@@ -114,16 +114,14 @@ def main():
 
     clusters = k_means_clusterize(points, centers)
 
-    xs1, ys1 = clusters[0].coordinates()
-    plot.scatter(xs1, ys1)
+    # draw clusters
+    for c in clusters:
+        xs, ys = c.coordinates()
+        plot.scatter(xs, ys)
 
-    xs2, ys2 = clusters[1].coordinates()
-    plot.scatter(xs2, ys2)
-
+    # draw cluster centers
     cxs, cys = list(c.center.x for c in clusters), list(c.center.y for c in clusters)
     plot.scatter(cxs, cys, color='black')
-
-    plot.gca().legend(('C1', 'C2', 'Centers'))
     plot.show()
 
 
