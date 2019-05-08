@@ -3,15 +3,16 @@ from rdkit.Chem import AllChem, Draw
 import rdkit.Chem.rdMolAlign as ChemAlign
 from rdkit.Chem import PyMol
 
+# all the shit from above can be installed with anaconda unfortunately
+
+EPINEPHRINE = 'C1CN=C(N1)NC2=C(C=CC=C2Cl)Cl'
+CLONIPIDINE = 'CNCC(C1=CC(=C(C=C1)O)O)O'
+
 
 def main():
-    # mol1 = Chem.MolFromMolFile('epinephrine.mol')
-    # mol2 = Chem.MolFromMolFile('clonidine.mol')
+    smiles = [EPINEPHRINE, CLONIPIDINE]
 
-    # mols = [mol1, mol2]
-    file = open('superposition.txt')
-    smiles = file.read().split('\n')
-    mols = [Chem.MolFromSmiles(m) for m in smiles][:2]
+    mols = [Chem.MolFromSmiles(m) for m in smiles]
     mols = [Chem.AddHs(m) for m in mols]
 
     i = 0
@@ -27,6 +28,7 @@ def main():
     refMol1 = AllChem.MMFFGetMoleculeProperties(mols[0])
     refMol2 = AllChem.MMFFGetMoleculeProperties(mols[1])
 
+    # somehow this shit is the key
     pyO3A = AllChem.GetO3A(mols[0], mols[1], refMol1, refMol2)
     print('align')
     print(pyO3A.Align())
@@ -34,10 +36,7 @@ def main():
 
     Chem.MolToMolFile(mols[0], '0_.mol')
     Chem.MolToMolFile(mols[1], '1_.mol')
-    # for m in mols:
-    # ff = AllChem.MMFFGetMoleculeForceField(mols[0])
-    # ff.Initialize()
-    # ff.Minimize()
+
     ff = AllChem.UFFGetMoleculeForceField(mols[0])
     ff.Initialize()
     ff.Minimize(maxIts=200)
@@ -49,13 +48,13 @@ def main():
     print('energy')
     print(ff.CalcEnergy())
 
-
-    #  launch pymol in server mode. it lays in anaconda/bin. 'pymol -R'
+    # launch pymol in server mode: `./pymol -R`
+    # it resides in ~/anaconda/bin
     v = PyMol.MolViewer()
     v.ShowMol(mols[0])
-    # v.ShowMol(mols[1])
     v.GetPNG(h=200)
 
 
 if __name__ == '__main__':
+    print('make sure pymol is launched in server mode')
     main()
