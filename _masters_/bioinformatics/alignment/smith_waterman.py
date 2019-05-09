@@ -6,6 +6,8 @@ CONSTANT_GAP_PENALTY_SCORE = -3
 
 class SubstMatrix:
     def __init__(self, filename: str):
+        self.proteins = []
+        self._m = {}
         self._load_matrix(filename)
 
     def _load_matrix(self, matrix_filename: str):
@@ -25,10 +27,11 @@ class SubstMatrix:
             for column_name in columns:
                 matrix[row_name][column_name] = entries.pop(0)
 
-        self.m = matrix
+        self._m = matrix
+        self.proteins = columns
 
     def lookup(self, a: str, b: str) -> int:
-        return int(self.m[a][b])
+        return int(self._m[a][b])
 
 
 def calc_scoring_matrix(s1: str, s2: str, subst: SubstMatrix, penalty: int) -> ([], int, int):
