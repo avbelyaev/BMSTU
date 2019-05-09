@@ -50,8 +50,8 @@ public class SWBasicTest {
 
     @Test
     public void testBasicSimilarityBig() {
-        String A = "TTGACACCCTCCCAATTGTA";
-        String B = "ACCCCAGGCTTTACACAT";
+        String A = "GGTTGACTA"; //"TTGACACCCTCCCAATTGTA";
+        String B = "TGTTACGG"; //"ACCCCAGGCTTTACACAT";
         int penalty = -5;
 
         ISmithWaterman nw = new SWBasic(A, B, penalty, basicSimilarity, basicAmeno);
