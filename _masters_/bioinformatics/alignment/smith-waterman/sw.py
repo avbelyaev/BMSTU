@@ -1,13 +1,14 @@
-BLOSUM62_FILENAME = 'blosum62.txt'
+#!/usr/bin/env python3
 
-CONSTANT_GAP_PENALTY_SCORE = 5
+BLOSUM62_FILENAME = 'blosum62.txt'
+CONSTANT_GAP_PENALTY_SCORE = -3
 
 
 class SubstMatrix:
     def __init__(self, filename: str):
         self._load_matrix(filename)
 
-    def _load_matrix(self, matrix_filename):
+    def _load_matrix(self, matrix_filename: str):
         with open(matrix_filename) as matrix_file:
             matrix = matrix_file.read()
         lines = matrix.strip().split('\n')
@@ -30,31 +31,32 @@ class SubstMatrix:
         return int(self.m[a][b])
 
 
-def calc_scoring_matrix(s1: str, s2: str, subst_matrix: SubstMatrix, penalty: int) -> []:
-    height = len(s1) + 1
-    width = len(s2) + 1
+def calc_scoring_matrix(s1: str, s2: str, subst: SubstMatrix, penalty: int) -> ([], int, int):
+    rows = len(s1) + 1
+    cols = len(s2) + 1
 
-    # alloc matrix
-    matrix = [[0] * width for _ in range(height)]
+    matrix = [[0] * cols for _ in range(rows)]
 
-    for i in range(height):
+    # первые строка и столбец = нули
+    for i in range(rows):
         matrix[i][0] = 0
 
-    for i in range(width):
+    for i in range(cols):
         matrix[0][i] = 0
 
-    max_score = 0
-    max_i = 0
-    max_j = 0
-    for i in range(1, height):
-        for j in range(1, width):
-            similarity_score = subst_matrix.lookup(s1[i - 1], s2[j - 1])
+    max_score = -1
+    max_i = -1
+    max_j = -1
+    for i in range(1, rows):
+        for j in range(1, cols):
+            similarity_score = subst.lookup(s1[i - 1], s2[j - 1])
 
             match = matrix[i - 1][j - 1] + similarity_score
             delete = matrix[i - 1][j] + penalty
             insert = matrix[i][j - 1] + penalty
 
             matrix[i][j] = max(0, match, insert, delete)
+            # запоминаем где было максимальное совпадение в таблице
             if matrix[i][j] > max_score:
                 max_score = matrix[i][j]
                 max_i = i
@@ -69,21 +71,12 @@ def smith_waterman(a: str, b: str, subst_matrix: SubstMatrix, penalty: int):
     res_a = ''
     res_b = ''
 
-    i = len(a)
-    while i > max_i:
-        res_a = a[i - 1] + res_a
-        res_b = '-' + res_b
-        i -= 1
-
-    j = len(b)
-    while j > max_j:
-        res_a = '-' + res_a
-        res_b = b[j - 1] + res_b
-        j -= 1
-
+    # т.к. выравнивание _локальное_, начинаем сразу с позиции,
+    # где было максмимальное совпадение. пытаемся расширить совпадение
     i = max_i
     j = max_j
-
+    # идем назад (traceback) по максимальному пути.
+    # таким образом, восстанавлиаем цепочку от конца к началу
     while i > 0 and j > 0 and m[i][j] > 0:
 
         score = m[i][j]
@@ -93,45 +86,42 @@ def smith_waterman(a: str, b: str, subst_matrix: SubstMatrix, penalty: int):
 
         s = subst_matrix.lookup(a[i - 1], b[j - 1])
 
+        # если идем по диагонали - все хорошо
         if score == (score_diag + s):
             res_a = a[i - 1] + res_a
             res_b = b[j - 1] + res_b
             i -= 1
             j -= 1
 
+        # если идем влево, занчит в цепочке разрыв => пенальти
         elif score == (score_left + penalty):
             res_a = a[i - 1] + res_a
             res_b = '-' + res_b
             i -= 1
 
+        # если идем вверх, занчит в цепочке разрыв => пенальти
         else:
             res_a = '-' + res_a
             res_b = b[j - 1] + res_b
             j -= 1
 
-    while i > 0:
-        res_a = a[i - 1] + res_a
-        res_b = '-' + res_b
-        i -= 1
-
-    while j > 0:
-        res_a = '-' + res_a
-        res_b = b[j - 1] + res_b
-        j -= 1
-
     return res_a, res_b
 
 
 def main():
+    # example from wiki
     s1 = 'TGTTACGG'
     s2 = 'GGTTGACTA'
     matrix = SubstMatrix(BLOSUM62_FILENAME)
     penalty = CONSTANT_GAP_PENALTY_SCORE
 
     res1, res2 = smith_waterman(s1, s2, matrix, penalty)
+    assert res1 == 'GTT-AC'
+    assert res2 == 'GTTGAC'
 
-    print(res1)
-    print(res2)
+    print(f'{s1}\n{s2}')
+    print('-------------')
+    print(f'{res1}\n{res2}')
 
 
 if __name__ == '__main__':
