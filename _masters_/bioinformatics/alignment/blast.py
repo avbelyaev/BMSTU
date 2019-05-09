@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import itertools
 
+import math
+
 from _masters_.bioinformatics.alignment.smith_waterman import SubstMatrix, BLOSUM62_FILENAME
 
 QUERY_SEQUENCE = 'PQGEQG'
@@ -15,6 +17,12 @@ SUBST_MATRIX = SubstMatrix(BLOSUM62_FILENAME)
 K_WORD_LEN = 3
 T_THRESHOLD_VALUE = 12
 
+# wiki
+LAMBDA = 0.318
+K_VALUE = 0.13
+H_VALUE = 0.4
+S_SCORE = 5
+
 
 class HighscorePair:
     def __init__(self, origin_substring: str, matching_sbstring: str):
@@ -26,6 +34,8 @@ class HighscorePair:
         self.hsp_query = None
         self.hsp_db_entry = None
         self.accumulated_score = 0
+        # significance fields
+        self.significance = 0
 
     def calc_match_score(self):
         assert len(self.origin) == len(self.match)
@@ -110,9 +120,29 @@ def find_database_matches(high_scoring_words: list) -> list:
 
 # hsp == high-scoring segment pair
 # hsp-extending step is from original BLAST, not BLAST2!
-# extend input sequences's match to db-entry
-def extend_matches_to_hsp(matches: list) -> list:
-    return [m.extend_to_highscore_segment_pair() for m in matches]
+def extend_matches_to_hsp(matches: list):
+    [m.extend_to_highscore_segment_pair() for m in matches]
+
+
+def compute_hsp_significance(hsps: list):
+    for hsp in hsps:
+        m = len(QUERY_SEQUENCE)
+        n = len(hsp.db_entry)
+
+        m1 = m - math.log(K_VALUE * m * n) / H_VALUE
+        n1 = n - math.log(K_VALUE * m * n) / H_VALUE
+        mu = math.log2(K_VALUE * m1 * n1) / LAMBDA
+
+        p = 1 - math.exp(-math.e ** (-LAMBDA * (S_SCORE - mu)))
+
+        E = 0
+        if p < 0.1:
+            E = p * len(PROTEIN_DATABASE)
+        else:
+            E = 1 - math.exp(-math.e ** (-LAMBDA * (S_SCORE - mu) * len(PROTEIN_DATABASE)))
+
+        print(f'p: {p}, E: {E}')
+        hsp.significance = E
 
 
 def blast():
@@ -127,7 +157,11 @@ def blast():
     exact_matches = find_database_matches(high_scoring_words)
     print(f'exact database matches (word, db-entry): {exact_matches}')
 
-    hsps = extend_matches_to_hsp(exact_matches)
+    extend_matches_to_hsp(exact_matches)
+    hsps = exact_matches
+    print(f'HSPs: {hsps}')
+
+    compute_hsp_significance(hsps)
     print(f'HSPs: {hsps}')
 
 
