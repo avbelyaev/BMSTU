@@ -1,17 +1,17 @@
-query sequence: PQGEQG, subst matrix: BLOSUM62
-words of len 3: ['PQG', 'QGE', 'GEQ', 'EQG']
-reducing matching pairs: 8096 -> 5
-high-scroing words: [[QGE]PQGEQG <-> [QGK]None, [QGE]PQGEQG <-> [QGB]None, [QGE]PQGEQG <-> [QGZ]None, [QGE]PQGEQG <-> [EGZ]None, [EQG]PQGEQG <-> [DQG]None]
-exact database matches (word, db-entry): [[QGE]PQGEQG <-> [QGZ]DPVQGZZFQJV]
-HSPs: [[QGE]PQGEQG <-> [QGZ]DPVQGZZFQJV]
-p: 0.0639984692209804, E: 0.7039831614307844
-HSPs: [[QGE]PQGEQG <-> [QGZ]DPVQGZZFQJV]
+query sequence: APQGEQG, subst matrix: BLOSUM62
+words of len 3: ['APQ', 'PQG', 'QGE', 'GEQ', 'EQG']
+reducing matching pairs: 10120 -> 6
+high-scroing words: [[APQ]APQGEQG <-> [APZ]None, [QGE]APQGEQG <-> [QGK]None, [QGE]APQGEQG <-> [QGB]None, [QGE]APQGEQG <-> [QGZ]None, [QGE]APQGEQG <-> [EGZ]None, [EQG]APQGEQG <-> [DQG]None]
+exact database matches (word, db-entry): [[QGE]APQGEQG <-> [QGZ]DPVQGZZFQJV]
+HSPs: [[QGE]APQGEQG <-> [QGZ]DPVQGZZFQJV]
+p: 0.1479333442775036, E: 1.77019776614884e-09
+HSPs: [[QGE]APQGEQG <-> [QGZ]DPVQGZZFQJV]
 Report:
 ==============================
-Query    |   PQGEQG
+Query    |  APQGEQG
          |   PQGEQ
          |   VQGZZ
 Database | DPVQGZZFQJV
 ------------------------------
-E-value  | 0.7039831614
+E-value  | 0.0000000018
 ==============================

@@ -4,9 +4,9 @@ import math
 
 from _masters_.bioinformatics.alignment.smith_waterman import SubstMatrix, BLOSUM62_FILENAME
 
-QUERY_SEQUENCE = 'PQGEQG'
+QUERY_SEQUENCE = 'APQGEQG'
 
-# just random 'words'
+# just random 'proteins'
 PROTEIN_DATABASE = [
     'DPPEGVVJGK', 'FGHKJNBFLKJG', 'QSGHJHIHKLHU', 'JKFGHSLAA', 'DPVQGZZFQJV',
     'DKHQJKKBF', 'GFDLWPQK', 'AJKHJEWBFJHWE', 'KOLBASA', 'EGDKASFJL', 'ASJKGHDSKQ'
@@ -166,7 +166,7 @@ def compute_hsp_significance(hsps: list):
 
         p = 1 - math.exp(-math.e ** (-LAMBDA * (S_SCORE - mu)))
 
-        # smth is wrong with E-value. need to fix
+        # the lower E-value, the more significant the match is
         E = 0
         if p < 0.1:
             E = p * len(PROTEIN_DATABASE)
