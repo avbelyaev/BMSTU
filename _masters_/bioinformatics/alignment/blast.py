@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import itertools
-
 import math
 
 from _masters_.bioinformatics.alignment.smith_waterman import SubstMatrix, BLOSUM62_FILENAME
@@ -34,6 +33,7 @@ class HighscorePair:
         self.hsp_query = None
         self.hsp_db_entry = None
         self.accumulated_score = 0
+        self._q_from, self._db_from, self._q_to, self._db_to = 0, 0, 0, 0
         # significance fields
         self.significance = 0
 
@@ -43,10 +43,11 @@ class HighscorePair:
             self.score += SUBST_MATRIX.lookup(self.origin[i], self.match[i])
 
     def extend_to_highscore_segment_pair(self):
-        q_from, db_from = self._extend_left()
-        q_to, db_to = self._extend_right()
-        self.hsp_query = QUERY_SEQUENCE[q_from: q_to]
-        self.hsp_db_entry = self.db_entry[db_from: db_to]
+        self._q_from, self._db_from = self._extend_left()
+        self._q_to, self._db_to = self._extend_right()
+
+        self.hsp_query = QUERY_SEQUENCE[self._q_from: self._q_to]
+        self.hsp_db_entry = self.db_entry[self._db_from: self._db_to]
 
     def _extend_left(self) -> (int, int, int):
         i = QUERY_SEQUENCE.index(self.origin)
@@ -75,6 +76,36 @@ class HighscorePair:
             i += 1
             j += 1
         return i - 1, j - 1
+
+    def report(self):
+        def fill(s: str, from_, to_):
+            while from_ < to_:
+                s += ' '
+                from_ += 1
+            return s
+
+        # report should be fixed otherwise
+        assert len(QUERY_SEQUENCE) <= len(self.db_entry)
+        delta_len = self._db_from - self._q_from
+
+        loc_query = ''
+        loc_query = fill(loc_query, 0, self._q_from)
+        loc_query += self.hsp_query
+        loc_query = fill(loc_query, len(loc_query), len(QUERY_SEQUENCE))
+
+        loc_db = ''
+        loc_db = fill(loc_db, 0, self._db_from)
+        loc_db += self.hsp_db_entry
+        loc_db = fill(loc_db, len(loc_db), len(self.db_entry))
+        return f'Report:\n' \
+               f'==============================\n' \
+               f'Query    | {QUERY_SEQUENCE.rjust(len(QUERY_SEQUENCE) + delta_len)}\n' \
+               f'         | {loc_query.rjust(len(loc_query) + delta_len)}\n' \
+               f'         | {loc_db}\n' \
+               f'Database | {self.db_entry}\n' \
+               f'------------------------------\n' \
+               f'E-value  | {self.significance:.10f}\n' \
+               f'=============================='
 
     def __repr__(self):
         return self.__str__()
@@ -135,6 +166,7 @@ def compute_hsp_significance(hsps: list):
 
         p = 1 - math.exp(-math.e ** (-LAMBDA * (S_SCORE - mu)))
 
+        # smth is wrong with E-value. need to fix
         E = 0
         if p < 0.1:
             E = p * len(PROTEIN_DATABASE)
@@ -163,6 +195,8 @@ def blast():
 
     compute_hsp_significance(hsps)
     print(f'HSPs: {hsps}')
+
+    [print(hsp.report()) for hsp in hsps]
 
 
 if __name__ == '__main__':

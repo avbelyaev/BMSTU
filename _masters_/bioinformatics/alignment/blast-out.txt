@@ -1,0 +1,17 @@
+query sequence: PQGEQG, subst matrix: BLOSUM62
+words of len 3: ['PQG', 'QGE', 'GEQ', 'EQG']
+reducing matching pairs: 8096 -> 5
+high-scroing words: [[QGE]PQGEQG <-> [QGK]None, [QGE]PQGEQG <-> [QGB]None, [QGE]PQGEQG <-> [QGZ]None, [QGE]PQGEQG <-> [EGZ]None, [EQG]PQGEQG <-> [DQG]None]
+exact database matches (word, db-entry): [[QGE]PQGEQG <-> [QGZ]DPVQGZZFQJV]
+HSPs: [[QGE]PQGEQG <-> [QGZ]DPVQGZZFQJV]
+p: 0.0639984692209804, E: 0.7039831614307844
+HSPs: [[QGE]PQGEQG <-> [QGZ]DPVQGZZFQJV]
+Report:
+==============================
+Query    |   PQGEQG
+         |   PQGEQ
+         |   VQGZZ
+Database | DPVQGZZFQJV
+------------------------------
+E-value  | 0.7039831614
+==============================
