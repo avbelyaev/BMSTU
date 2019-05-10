@@ -4,7 +4,7 @@ reducing matching pairs: 10120 -> 6
 high-scroing words: [[APQ]APQGEQG <-> [APZ]None, [QGE]APQGEQG <-> [QGK]None, [QGE]APQGEQG <-> [QGB]None, [QGE]APQGEQG <-> [QGZ]None, [QGE]APQGEQG <-> [EGZ]None, [EQG]APQGEQG <-> [DQG]None]
 exact database matches (word, db-entry): [[QGE]APQGEQG <-> [QGZ]DPVQGZZFQJV]
 HSPs: [[QGE]APQGEQG <-> [QGZ]DPVQGZZFQJV]
-p: 0.1479333442775036, E: 1.77019776614884e-09
+p: 0.017134778317260846, E: 0.1884825614898693
 HSPs: [[QGE]APQGEQG <-> [QGZ]DPVQGZZFQJV]
 Report:
 ==============================
@@ -13,5 +13,5 @@ Query    |  APQGEQG
          |   VQGZZ
 Database | DPVQGZZFQJV
 ------------------------------
-E-value  | 0.0000000018
+E-value  | 0.1884825615
 ==============================

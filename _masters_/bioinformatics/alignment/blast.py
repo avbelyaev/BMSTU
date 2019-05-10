@@ -20,7 +20,7 @@ T_THRESHOLD_VALUE = 12
 LAMBDA = 0.318
 K_VALUE = 0.13
 H_VALUE = 0.4
-S_SCORE = 5
+S_SCORE = 12  # same as T-value
 
 
 class HighscorePair:
@@ -171,7 +171,7 @@ def compute_hsp_significance(hsps: list):
         if p < 0.1:
             E = p * len(PROTEIN_DATABASE)
         else:
-            E = 1 - math.exp(-math.e ** (-LAMBDA * (S_SCORE - mu) * len(PROTEIN_DATABASE)))
+            E = 1 - math.e ** (-LAMBDA * (S_SCORE - mu) * len(PROTEIN_DATABASE))
 
         print(f'p: {p}, E: {E}')
         hsp.significance = E
