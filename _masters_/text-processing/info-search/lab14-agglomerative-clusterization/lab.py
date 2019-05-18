@@ -35,19 +35,19 @@ class Cluster:
 # fck data science
 def single_link(distance_function):
     linkage = sch.linkage(distance_function, method='single')
-    return sch.fcluster(linkage, 0.05 * distance_function.max(), 'distance')
+    return sch.fcluster(linkage, criterion='maxclust', t=2)
 
 
 # fck data science
 def complete_link(distance_function):
     linkage = sch.linkage(distance_function, method='complete')
-    return sch.fcluster(linkage, 5000 * distance_function.min(), 'distance')
+    return sch.fcluster(linkage, criterion='maxclust', t=2)
 
 
 def main():
     distance_function = sch.distance.pdist(np.array(POINTS), metric='cosine')
-    # clusterized = single_link(distance_function)
-    clusterized = complete_link(distance_function)
+    clusterized = single_link(distance_function)
+    # clusterized = complete_link(distance_function)
 
     # (-1) for each index since numeration after `fclutser` starts from 1
     clusterized = [cluster_indx - 1 for cluster_indx in clusterized]
