@@ -56,12 +56,13 @@ def calc_scoring_table(s1: str, s2: str, subst: SubstMatrix) -> ([], int, int):
             delete = matrix[i - 1][j] + GAP_PENALTY
             insert = matrix[i][j - 1] + GAP_PENALTY
 
+            # значение в ячейке [2;2] зависит от значений в [2;1](слева), [1;2](сверху), [1;1](диаг)
             matrix[i][j] = max(match, insert, delete)
 
     return matrix
 
 
-def smith_waterman(a: str, b: str, subst_matrix: SubstMatrix):
+def needleman_wunsch(a: str, b: str, subst_matrix: SubstMatrix):
     m = calc_scoring_table(a, b, subst_matrix)
 
     res_a = ''
@@ -107,7 +108,7 @@ def main():
     s2 = 'AGSDFAGHFHQDQGHDHGD'
     matrix = SubstMatrix(BLOSUM62_FILENAME)
 
-    res1, res2 = smith_waterman(s1, s2, matrix)
+    res1, res2 = needleman_wunsch(s1, s2, matrix)
     assert 'AGRF---AG--H-V' == res1
     assert 'AGHFHQDQGHDHGD' == res2
 
