@@ -1,8 +1,9 @@
 from skimage import io
 import math
 
-# идет по 2м изображениям построчно
-# как только находит в строке пиксель соответствующего цвета
+# берем первые X строк изображения
+# идет по 2м изображениям (экспертному и машинному) построчно
+# как только находит в строке пиксель соответствующего цвета (красного или зеленого)
 # замеряет евклидово расстояние между такими пикселями первого и второго изображения
 # строит таблицу расхождений
 
@@ -15,7 +16,7 @@ FILENAME_MACHINE = 'machine_31.jpg'
 EXPERT_POINT = [0, 255, 0]  # green
 MACHINE_POINT = [255, 0, 0]  # red
 
-ROWS_TO_COMPARE = 50
+ROWS_TO_COMPARE = 30
 
 
 class Point:
@@ -49,12 +50,12 @@ class Deviation:
 
 def main():
     # экспертное изображение
-    img_expert = io.imread(FILENAME_EXPERT, as_gray=True)
+    img_expert = io.imread(FILENAME_EXPERT)
     img_expert = img_expert.tolist()
     imglen_expert = len(img_expert)
 
     # полученное автоматическим путем изображение
-    img_machine = io.imread(FILENAME_MACHINE, as_gray=True)
+    img_machine = io.imread(FILENAME_MACHINE)
     img_machine = img_machine.tolist()
     imglen_machine = len(img_machine)
 
@@ -80,11 +81,13 @@ def main():
 
         deviations.append(Deviation(expert_point, machine_point))
 
-    # находимо отклоенения меньше
+    [print(d) for d in deviations]
+
+    # находимо отклоенения меньше THRESHOLD
     deviations = list(filter(lambda d: DEVIATION_MIN_DIST < d.dist < DEVIATION_MAX_DIST, deviations))
 
     print(f'points with deviation in range: ({DEVIATION_MIN_DIST}, {DEVIATION_MAX_DIST})')
-    print(deviations)
+    [print(d) for d in deviations]
 
 
 if __name__ == '__main__':
