@@ -1,0 +1,15 @@
+clear all;
+
+img = imread('regular_31.jpg');
+img = rgb2gray(img);
+[img_h, img_w, dim] = size(img);
+
+
+THRESHOLD = 15;
+
+for i = 1:img_h
+    for j = 1:img_w-1
+        if img(i, j) 
+        img(i,j) = img(i,j) - img(i, j+1);
+    end
+end 
