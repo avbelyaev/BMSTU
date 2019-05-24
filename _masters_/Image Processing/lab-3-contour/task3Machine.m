@@ -2,12 +2,13 @@ clear all;
 
 % mark boundaries with red color
 RED_COLOR = 'r';
+COMPONENTS = 8;
 
-img = imread('regular_31.jpg');
+img = imread('regular_002.jpg');
 img = rgb2gray(img);
 bin = imbinarize(img);
 
-[B,L] = bwboundaries(bin,'noholes');
+[B,L] = bwboundaries(bin, COMPONENTS, 'noholes');
 imshow(label2rgb(L, @jet, [.5 .5 .5]))
 hold on
 for k = 1:length(B)

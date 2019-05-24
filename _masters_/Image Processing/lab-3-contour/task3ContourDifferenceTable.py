@@ -82,17 +82,13 @@ def main():
         # ищем точку, поставленную экспертом
         expert_point = None
         for j in range(imglen_expert):
-            pixel = img_expert[i][j]
-            is_green = is_of_color(EXPERT_POINT_COLOR_THRESHOLD, pixel)
-            if is_green:
+            if is_of_color(EXPERT_POINT_COLOR_THRESHOLD, img_expert[i][j]):
                 expert_point = Point(i, j)
 
         # ищем точку, поставленную алгоритмом
         machine_point = None
         for j in range(imglen_machine):
-            pixel = img_machine[i][j]
-            is_red = is_of_color(MACHINE_POINT_COLOR_THRESHOLD, pixel)
-            if is_red:
+            if is_of_color(MACHINE_POINT_COLOR_THRESHOLD, img_machine[i][j]):
                 machine_point = Point(i, j)
 
         if expert_point and machine_point:
@@ -106,7 +102,7 @@ def main():
     [print(d) for d in deviations]
 
     # находим отклоенения попадающие под THRESHOLD
-    deviations = list(filter(lambda d: DEVIATION_MIN_DIST < d.dist < DEVIATION_MAX_DIST, deviations))
+    deviations_thr = list(filter(lambda d: DEVIATION_MIN_DIST < d.dist < DEVIATION_MAX_DIST, deviations))
 
     print(f'\npoints with deviation in range: ({DEVIATION_MIN_DIST}, {DEVIATION_MAX_DIST})')
     [print(d) for d in deviations]
@@ -117,6 +113,8 @@ def main():
         t.add_row([d.exp, d.real, d.dist])
 
     print(t)
+
+    print(f'Percentage with deviation: {len(deviations_thr)/len(deviations)}')
 
 
 if __name__ == '__main__':
