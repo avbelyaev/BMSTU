@@ -15,7 +15,7 @@ BLUE = 2
 FILENAME = 'letter.png'
 IMG = io.imread(FILENAME).tolist()
 
-STEP = 37
+STEP = 17
 
 
 class Direction(Enum):
@@ -112,18 +112,18 @@ def is_contour(pixel) -> bool:
 
 
 def extract_contour_pts(img) -> list:
+    rows = len(img)
+    cols = len(img[0])
+
     # находим первую попавшуюся точку контура
-    def find_start_pt(img) -> Point:
-        rows = len(img)
-        cols = len(img[0])
+    def find_start_pt() -> Point:
         for i in range(rows):
             for j in range(cols):
                 if is_contour(img[i][j]):
                     return Point(i, j)
 
-    start_pt = find_start_pt(img)
+    start_pt = find_start_pt()
     curr_pt = start_pt
-    prev_pt = None
 
     contour = []
     while True:
@@ -158,6 +158,13 @@ def extract_contour_pts(img) -> list:
     print(f'contour size: {len(contour)}')
     print(f'start pt: {start_pt}')
     print(f'end   pt: {contour[len(contour) - 1]}')
+
+    # оси координат не соответствуют реальным осям
+    # таким образом рисунок искажается (поворачивается и оборачивается)
+    # перестановкой x и y мы позволяем снова правльно его рисовать
+    for p in contour:
+        p.x, p.y = p.y, rows - p.x
+
     return contour
 
 
@@ -169,9 +176,11 @@ def approximate_contour(contour: list, step) -> list:
         p1 = contour[i + step]
         vectors.append(Vector(p0, p1))
 
-    # соединим последнюю точку последнего вектора с первой точкой первого вектора
-    # vectors[-1].pt_to.x = vectors[0].pt_from.x
-    # vectors[-1].pt_to.y = vectors[0].pt_from.y
+    # вручную соединим последнюю точку последнего вектора
+    # с первой точкой первого вектора, чтобы замкнуть контур
+    first = vectors[0]
+    last = vectors[-1]
+    vectors.append(Vector(last.pt_to, first.pt_from))
     return vectors
 
 
