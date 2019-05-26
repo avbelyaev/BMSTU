@@ -1,5 +1,7 @@
 import math
 from skimage import io
+import matplotlib.pyplot as plt
+
 
 WHITE_CONTOUR_MASK = [200, 200, 200]
 RED = 0
@@ -9,7 +11,7 @@ BLUE = 2
 FILENAME = 'circle.png'
 IMG = io.imread(FILENAME).tolist()
 
-STEP = 5
+STEP = 50
 
 
 class Point:
@@ -136,8 +138,12 @@ def approximate_contour(contour: list, step) -> list:
 
 def main():
     points = extract_contour_pts(IMG)
-    vectors = approximate_contour(points, STEP)
-    print('asdas')
+
+    for step in range(10, 250, 5):
+        vectors = approximate_contour(points, step)
+        for v in vectors:
+            plt.plot([v.pt_from.x, v.pt_to.x], [v.pt_from.y, v.pt_to.y])
+    plt.show()
 
 
 if __name__ == '__main__':
