@@ -1,7 +1,8 @@
+import abc
 import math
-from skimage import io
-import matplotlib.pyplot as plt
+from enum import Enum
 
+from skimage import io
 
 WHITE_CONTOUR_MASK = [200, 200, 200]
 RED = 0
@@ -11,7 +12,12 @@ BLUE = 2
 FILENAME = 'circle.png'
 IMG = io.imread(FILENAME).tolist()
 
-STEP = 50
+STEP = 5
+
+
+class Direction(Enum):
+    CLOCKWISE = 1
+    COUNTER_CLOCKWISE = -1
 
 
 class Point:
@@ -36,6 +42,12 @@ class Vector:
         self.pt_from = pt_from
         self.pt_to = pt_to
 
+    # радиус-вектор представляется точкой
+    def to_radius_vector(self) -> Point:
+        delta_x = self.pt_to.x - self.pt_from.x
+        delta_y = self.pt_to.y - self.pt_from.y
+        return Point(delta_x, delta_y)
+
     def __repr__(self):
         return self.__str__()
 
@@ -43,24 +55,47 @@ class Vector:
         return f'{self.pt_from} -> {self.pt_to}'
 
 
-class ThreeAttributeEncoding:
+class Boundary:
+    def encode(self) -> str:
+        raise NotImplementedError
+
+
+class ThreeAttrBoundary(Boundary):
     """
-    Кодирование по трем признакам
+    Элемент границы, закодированной по трем признакам:
+    (длина вектора, угол, направление поворота к следующему вектору)
     """
 
     def __init__(self, v_curr: Vector, v_next: Vector):
-        self.len = None
-        self.direction = None
-        self.angle = None
+        self.len = vector_len(v_curr)
+        self.angle = self._normalize_angle(v_curr, v_next)
+        self.direction = Direction.COUNTER_CLOCKWISE if self.angle > 0 \
+            else Direction.CLOCKWISE
+
+    # угол [0 360) преобразовать в угол [0 180) со знаком
+    # например, 300" == -60"
+    def _normalize_angle(self, v1: Vector, v2: Vector) -> float:
+        big_angle = directionwise_angle(v1, v2)
+        return big_angle if big_angle <= 180 else big_angle - 360
+
+    def encode(self) -> str:
+        return f'[{self.len:.2f} \tangle:{self.angle:.2f} {self.direction}]'
 
 
-def counterclockwise_angle(p1, p2):
-    v1_theta = math.atan2(p1[1], p1[0])
-    v2_theta = math.atan2(p2[1], p2[0])
+# угол между радиус-векторами в диапазоне [0, 360)
+def directionwise_angle(v1: Vector, v2: Vector) -> float:
+    p1, p2 = v1.to_radius_vector(), v2.to_radius_vector()
+
+    v1_theta = math.atan2(p1.y, p1.x)
+    v2_theta = math.atan2(p2.y, p2.x)
     r = (v2_theta - v1_theta) * (180.0 / math.pi)
     if r < 0:
         r += 360.0
     return r
+
+
+def vector_len(v: Vector) -> float:
+    return math.sqrt((v.pt_to.x - v.pt_from.x) ** 2 + (v.pt_to.y - v.pt_from.y) ** 2)
 
 
 # pixel = [R, G, B]
@@ -117,6 +152,8 @@ def extract_contour_pts(img) -> list:
         curr_pt = next_pt
 
         # контур замкнулся
+        # надо проверять не встречали ли мы точку ранее на случай
+        # если контур замкнется не в точке старта
         if curr_pt == start_pt:
             break
 
@@ -136,14 +173,24 @@ def approximate_contour(contour: list, step) -> list:
     return vectors
 
 
+def three_attr_encoding(vectors: list) -> list:
+    boundaries = []
+    vec_len = len(vectors)
+    for i in range(vec_len):
+        v1 = vectors[i]
+        v2 = vectors[(i + 1) % vec_len]
+        boundaries.append(ThreeAttrBoundary(v1, v2))
+
+    return boundaries
+
+
 def main():
     points = extract_contour_pts(IMG)
+    vectors = approximate_contour(points, STEP)
 
-    for step in range(10, 250, 5):
-        vectors = approximate_contour(points, step)
-        for v in vectors:
-            plt.plot([v.pt_from.x, v.pt_to.x], [v.pt_from.y, v.pt_to.y])
-    plt.show()
+    enc1 = three_attr_encoding(vectors)
+    print('Three attribute encoding')
+    [print(e.encode()) for e in enc1]
 
 
 if __name__ == '__main__':
