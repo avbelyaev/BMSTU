@@ -84,12 +84,14 @@ def main():
         for j in range(imglen_expert):
             if is_of_color(EXPERT_POINT_COLOR_THRESHOLD, img_expert[i][j]):
                 expert_point = Point(i, j)
+                break
 
         # ищем точку, поставленную алгоритмом
         machine_point = None
         for j in range(imglen_machine):
             if is_of_color(MACHINE_POINT_COLOR_THRESHOLD, img_machine[i][j]):
                 machine_point = Point(i, j)
+                break
 
         if expert_point and machine_point:
             deviations.append(Deviation(expert_point, machine_point))
