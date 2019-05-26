@@ -9,6 +9,8 @@ BLUE = 2
 FILENAME = 'circle.png'
 IMG = io.imread(FILENAME).tolist()
 
+STEP = 5
+
 
 class Point:
     def __init__(self, x: int, y: int):
@@ -31,6 +33,12 @@ class Vector:
     def __init__(self, pt_from: Point, pt_to: Point):
         self.pt_from = pt_from
         self.pt_to = pt_to
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return f'{self.pt_from} -> {self.pt_to}'
 
 
 class ThreeAttributeEncoding:
@@ -63,7 +71,7 @@ def is_contour(pixel) -> bool:
     return is_of_color(WHITE_CONTOUR_MASK)
 
 
-def detect_contour(img) -> list:
+def extract_contour_pts(img) -> list:
     # находим первую попавшуюся точку контура
     def find_start_pt(img) -> Point:
         rows = len(img)
@@ -116,8 +124,19 @@ def detect_contour(img) -> list:
     return contour
 
 
+def approximate_contour(contour: list, step) -> list:
+    vectors = []
+    ctr_len = len(contour)
+    for i in range(0, ctr_len, step):
+        p0 = contour[i]
+        p1 = contour[(i + step) % ctr_len]
+        vectors.append(Vector(p0, p1))
+    return vectors
+
+
 def main():
-    contour = detect_contour(IMG)
+    points = extract_contour_pts(IMG)
+    vectors = approximate_contour(points, STEP)
     print('asdas')
 
 
