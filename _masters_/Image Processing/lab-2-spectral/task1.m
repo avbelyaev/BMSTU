@@ -11,8 +11,8 @@ y = zeros(1, n);
 
 for i = 1:n
     x = xs(i);
-    y_real(i) = abs((-1 + cos(x)) / (sqrt(2*pi)*x*x));
-    y_img(i) = abs((2*x*cos(x) - x - sin(x)) / (sqrt(2*pi)*x*x));
+    y_real(i) = (-1 + cos(x) + 2*x*sin(x)) / (sqrt(2*pi)*x*x);
+    y_img(i) = (x - sin(x)) / (sqrt(2*pi)*x*x);
     y(i) = func(x);
 end
 
