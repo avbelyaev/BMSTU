@@ -1,18 +1,21 @@
 import abc
 import math
 from enum import Enum
-
+import matplotlib.pyplot as plt
 from skimage import io
+
 
 WHITE_CONTOUR_MASK = [200, 200, 200]
 RED = 0
 GREEN = 1
 BLUE = 2
 
-FILENAME = 'circle.png'
+# FILENAME = 'circle.png'
+# FILENAME = 'star.png'
+FILENAME = 'letter.png'
 IMG = io.imread(FILENAME).tolist()
 
-STEP = 5
+STEP = 17
 
 
 class Direction(Enum):
@@ -139,23 +142,18 @@ def extract_contour_pts(img) -> list:
         ]
         next_pt = None
         # рассматриваем 8 соседей
-        # среди соседей будут 2 контурных точки - prev и next
+        # среди соседей будут несколько контурных точек
         for p in nearest_points:
-            # нам надо найти НЕ предыдущую точку
-            if p.is_contour and p != prev_pt:
+            # нам надо найти еще НЕ посещенную точку
+            if p.is_contour and p in contour:
                 next_pt = p
                 break
-        else:
-            raise ValueError(f'could not find next point for {curr_pt}')
 
-        prev_pt = curr_pt
-        curr_pt = next_pt
-
-        # контур замкнулся
-        # надо проверять не встречали ли мы точку ранее на случай
-        # если контур замкнется не в точке старта
-        if curr_pt == start_pt:
+        # не нашли непосещенной точки => выходим
+        if next_pt is None:
             break
+
+        curr_pt = next_pt
 
     print(f'contour size: {len(contour)}')
     print(f'start pt: {start_pt}')
@@ -166,10 +164,14 @@ def extract_contour_pts(img) -> list:
 def approximate_contour(contour: list, step) -> list:
     vectors = []
     ctr_len = len(contour)
-    for i in range(0, ctr_len, step):
+    for i in range(0, ctr_len - step, step):
         p0 = contour[i]
-        p1 = contour[(i + step) % ctr_len]
+        p1 = contour[i + step]
         vectors.append(Vector(p0, p1))
+
+    # соединим последнюю точку последнего вектора с первой точкой первого вектора
+    # vectors[-1].pt_to.x = vectors[0].pt_from.x
+    # vectors[-1].pt_to.y = vectors[0].pt_from.y
     return vectors
 
 
@@ -187,6 +189,10 @@ def three_attr_encoding(vectors: list) -> list:
 def main():
     points = extract_contour_pts(IMG)
     vectors = approximate_contour(points, STEP)
+
+    for v in vectors:
+        plt.plot([v.pt_from.x, v.pt_to.x], [v.pt_from.y, v.pt_to.y])
+    plt.show()
 
     enc1 = three_attr_encoding(vectors)
     print('Three attribute encoding')
