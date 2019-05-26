@@ -15,7 +15,7 @@ BLUE = 2
 FILENAME = 'letter.png'
 IMG = io.imread(FILENAME).tolist()
 
-STEP = 17
+STEP = 37
 
 
 class Direction(Enum):
@@ -145,7 +145,7 @@ def extract_contour_pts(img) -> list:
         # среди соседей будут несколько контурных точек
         for p in nearest_points:
             # нам надо найти еще НЕ посещенную точку
-            if p.is_contour and p in contour:
+            if p.is_contour and p not in contour:
                 next_pt = p
                 break
 
