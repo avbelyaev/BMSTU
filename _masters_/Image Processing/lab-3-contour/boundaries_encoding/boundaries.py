@@ -1,16 +1,30 @@
 import math
+from skimage import io
+
+WHITE_CONTOUR_MASK = [200, 200, 200]
+RED = 0
+GREEN = 1
+BLUE = 2
+
+FILENAME = 'circle.png'
+IMG = io.imread(FILENAME).tolist()
 
 
 class Point:
     def __init__(self, x: int, y: int):
         self.x = x
         self.y = y
+        self.is_contour = is_contour(IMG[self.x][self.y])
+
+    def __eq__(self, other):
+        return other is not None and \
+               self.x == other.x and self.y == other.y
 
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
-        return f'[{self.x}:{self.y}]'
+        return f'[{self.x}:{self.y}] cont:{self.is_contour}'
 
 
 class Vector:
@@ -30,7 +44,7 @@ class ThreeAttributeEncoding:
         self.angle = None
 
 
-def angle_between(p1, p2):
+def counterclockwise_angle(p1, p2):
     v1_theta = math.atan2(p1[1], p1[0])
     v2_theta = math.atan2(p2[1], p2[0])
     r = (v2_theta - v1_theta) * (180.0 / math.pi)
@@ -39,8 +53,72 @@ def angle_between(p1, p2):
     return r
 
 
+# pixel = [R, G, B]
+def is_contour(pixel) -> bool:
+    def is_of_color(color: list) -> bool:
+        return pixel[RED] >= color[RED] and \
+               pixel[GREEN] >= color[GREEN] and \
+               pixel[BLUE] >= color[BLUE]
+
+    return is_of_color(WHITE_CONTOUR_MASK)
+
+
+def detect_contour(img) -> list:
+    # находим первую попавшуюся точку контура
+    def find_start_pt(img) -> Point:
+        rows = len(img)
+        cols = len(img[0])
+        for i in range(rows):
+            for j in range(cols):
+                if is_contour(img[i][j]):
+                    return Point(i, j)
+
+    start_pt = find_start_pt(img)
+    curr_pt = start_pt
+    prev_pt = None
+
+    contour = []
+    while True:
+        contour.append(curr_pt)
+        x, y = curr_pt.x, curr_pt.y
+
+        nearest_points = [
+            Point(x, y + 1),
+            Point(x + 1, y + 1),
+            Point(x + 1, y),
+            Point(x + 1, y - 1),
+            Point(x, y - 1),
+            Point(x - 1, y - 1),
+            Point(x - 1, y),
+            Point(x - 1, y + 1)
+        ]
+        next_pt = None
+        # рассматриваем 8 соседей
+        # среди соседей будут 2 контурных точки - prev и next
+        for p in nearest_points:
+            # нам надо найти НЕ предыдущую точку
+            if p.is_contour and p != prev_pt:
+                next_pt = p
+                break
+        else:
+            raise ValueError(f'could not find next point for {curr_pt}')
+
+        prev_pt = curr_pt
+        curr_pt = next_pt
+
+        # контур замкнулся
+        if curr_pt == start_pt:
+            break
+
+    print(f'contour size: {len(contour)}')
+    print(f'start pt: {start_pt}')
+    print(f'end   pt: {contour[len(contour) - 1]}')
+    return contour
+
+
 def main():
-    pass
+    contour = detect_contour(IMG)
+    print('asdas')
 
 
 if __name__ == '__main__':
