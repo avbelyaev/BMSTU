@@ -1,9 +1,7 @@
-import abc
 import math
 from enum import Enum
 import matplotlib.pyplot as plt
 from skimage import io
-
 
 WHITE_CONTOUR_MASK = [200, 200, 200]
 RED = 0
@@ -59,12 +57,12 @@ class Vector:
         return f'{self.pt_from} -> {self.pt_to}'
 
 
-class Boundary:
+class Encoding:
     def encode(self) -> str:
         raise NotImplementedError
 
 
-class ThreeAttrBoundary(Boundary):
+class ThreeAttrEncoding(Encoding):
     """
     Элемент границы, закодированной по трем признакам:
     (длина вектора, угол, направление поворота к следующему вектору)
@@ -87,7 +85,7 @@ class ThreeAttrBoundary(Boundary):
         return f'[{self.len:.2f} \tangle:{self.angle:.2f} {self.direction}]'
 
 
-class ThreeDigitCode(Boundary):
+class ThreeDigitEncoding(Encoding):
     """
     трехразрядный код
     """
@@ -96,7 +94,7 @@ class ThreeDigitCode(Boundary):
         ox_vector = Vector(Point(0, 0), Point(1, 0))
         self.code = self._three_digit_code(v_curr, ox_vector)
 
-    def _three_digit_code(self, v1: Vector, v2: Vector) -> str:
+    def _three_digit_code(self, v1: Vector, v2: Vector) -> int:
         big_angle = directionwise_angle(v2, v1)
         code = None
         if 337.5 <= big_angle < 360:
@@ -118,10 +116,36 @@ class ThreeDigitCode(Boundary):
         elif big_angle < 22.5:
             code = 0
         # в бинарный вид
-        return f'{code}: {code:03b}'
+        return code
 
     def encode(self) -> str:
-        return f'{self.code}'
+        return f'{self.code}: {self.code:03b}'
+
+
+class ProjectionEncoding(ThreeDigitEncoding):
+    """
+    кодирование проекциями
+    """
+
+    def __init__(self, v_curr: Vector):
+        super(ProjectionEncoding, self).__init__(v_curr)
+        self.projection = self._project(self.code)
+
+    def _project(self, code: int) -> (int, int):
+        code_to_projection = {
+            0: (0, 0),
+            1: (1, -1),
+            2: (0, -1),
+            3: (-1, -1),
+            4: (-1, 0),
+            5: (-1, 1),
+            6: (0, 1),
+            7: (1, 1)
+        }
+        return code_to_projection[code]
+
+    def encode(self) -> str:
+        return f'{self.projection}'
 
 
 # угол между радиус-векторами в диапазоне [0, 360)
@@ -233,18 +257,29 @@ def main():
     for i in range(vec_len):
         v1 = vectors[i]
         v2 = vectors[(i + 1) % vec_len]
-        enc1.append(ThreeAttrBoundary(v1, v2))
+        enc1.append(ThreeAttrEncoding(v1, v2))
     [print(e.encode()) for e in enc1[:SAMPLES]]
 
     print('\nКодирование трехразрядным кодом')
     enc2 = []
     for i in range(vec_len):
-        enc2.append(ThreeDigitCode(vectors[i]))
+        enc2.append(ThreeDigitEncoding(vectors[i]))
     [print(e.encode()) for e in enc2[:SAMPLES]]
 
-    for v in vectors:
-        plt.plot([v.pt_from.x, v.pt_to.x], [v.pt_from.y, v.pt_to.y])
-    plt.show()
+    print('\nКодирование проекциями')
+    enc3 = []
+    for i in range(vec_len):
+        enc3.append(ProjectionEncoding(vectors[i]))
+    [print(e.encode()) for e in enc3[:SAMPLES]]
+
+    print('\nКодирование восемью комплексными числами')
+    enc4 = []
+    for i in range(vec_len):
+        enc4.append(ProjectionEncoding(vectors[i]))
+    [print(e.encode()) for e in enc3[:SAMPLES]]
+    # for v in vectors:
+    #     plt.plot([v.pt_from.x, v.pt_to.x], [v.pt_from.y, v.pt_to.y])
+    # plt.show()
 
 
 if __name__ == '__main__':
