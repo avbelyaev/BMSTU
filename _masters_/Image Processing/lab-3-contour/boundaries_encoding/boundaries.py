@@ -8,12 +8,13 @@ RED = 0
 GREEN = 1
 BLUE = 2
 
+# граница рисунка должна быть толщиной в 1 пиксель!
 # FILENAME = 'circle.png'
-FILENAME = 'star.png'
-# FILENAME = 'letter.png'
+# FILENAME = 'star.png'
+FILENAME = 'pine5.jpg'
 IMG = io.imread(FILENAME).tolist()
 
-STEP = 29
+STEP = 31
 SAMPLES = 7
 
 
@@ -26,7 +27,10 @@ class Point:
     def __init__(self, x: int, y: int):
         self.x = x
         self.y = y
-        self.is_contour = is_contour(IMG[self.x][self.y])
+        try:
+            self.is_contour = is_contour(IMG[self.x][self.y])
+        except IndexError:
+            pass
 
     def __eq__(self, other):
         return other is not None and \
@@ -36,7 +40,7 @@ class Point:
         return self.__str__()
 
     def __str__(self):
-        return f'[{self.x}:{self.y}]'
+        return f'[{self.x}:{self.y}] c:{self.is_contour}'
 
 
 class Vector:
@@ -246,14 +250,14 @@ def extract_contour_pts(img) -> list:
         x, y = curr_pt.x, curr_pt.y
 
         nearest_points = [
-            Point(x, y + 1),
-            Point(x + 1, y + 1),
             Point(x + 1, y),
             Point(x + 1, y - 1),
             Point(x, y - 1),
             Point(x - 1, y - 1),
             Point(x - 1, y),
-            Point(x - 1, y + 1)
+            Point(x - 1, y + 1),
+            Point(x, y + 1),
+            Point(x + 1, y + 1)
         ]
         next_pt = None
         # рассматриваем 8 соседей

@@ -1,0 +1,57 @@
+contour size: 991
+start pt: [8:82] c:True
+end   pt: [8:83] c:True
+
+Кодирование по трем признакам
+[33.6 	angle:73.0 Direction.CLOCKWISE]
+[20.1 	angle:0.9 Direction.COUNTER_CLOCKWISE]
+[24.1 	angle:130.6 Direction.COUNTER_CLOCKWISE]
+[22.2 	angle:7.0 Direction.CLOCKWISE]
+[22.8 	angle:128.3 Direction.CLOCKWISE]
+[18.2 	angle:79.5 Direction.COUNTER_CLOCKWISE]
+[11.7 	angle:52.3 Direction.COUNTER_CLOCKWISE]
+
+Кодирование трехразрядным кодом
+3: 011
+4: 100
+4: 100
+1: 001
+1: 001
+4: 100
+2: 010
+
+Кодирование проекциями
+(-1, -1)
+(-1, 0)
+(-1, 0)
+(1, -1)
+(1, -1)
+(-1, 0)
+(0, -1)
+
+Кодирование восемью комплексными числами
+(-1 + -1i)
+(-1)
+(-1)
+(1 + -1i)
+(1 + -1i)
+(-1)
+(-1i)
+
+Кодирование координатами концов векторов
+[82:307] c:True -> [69:276] c:True
+[69:276] c:True -> [49:278] c:True
+[49:278] c:True -> [25:280] c:True
+[25:280] c:True -> [38:262] c:True
+[38:262] c:True -> [49:242] c:True
+[49:242] c:True -> [31:245] c:True
+[31:245] c:True -> [27:234] c:True
+
+Кодирование в полярных координатах
+33.6 + cos(284.0)
+20.1 + cos(280.0)
+24.1 + cos(275.1)
+22.2 + cos(278.3)
+22.8 + cos(281.4)
+18.2 + cos(277.2)
+11.7 + cos(276.6)
