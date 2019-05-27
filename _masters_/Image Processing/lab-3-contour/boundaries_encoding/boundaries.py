@@ -36,7 +36,7 @@ class Point:
         return self.__str__()
 
     def __str__(self):
-        return f'[{self.x}:{self.y}] cont:{self.is_contour}'
+        return f'[{self.x}:{self.y}]'
 
 
 class Vector:
@@ -91,6 +91,7 @@ class ThreeDigitEncoding(Encoding):
     """
 
     def __init__(self, v_curr: Vector):
+        self.v = v_curr
         ox_vector = Vector(Point(0, 0), Point(1, 0))
         self.code = self._three_digit_code(v_curr, ox_vector)
 
@@ -167,6 +168,18 @@ class ComplexNumberEncoding(ProjectionEncoding):
             return f'({real})'
         else:
             return f'({real} + {imag}i)'
+
+
+class VectorCoordinatesEncoding(ThreeDigitEncoding):
+    """
+    Кодирование Координатами концов векторов
+    """
+
+    def __init__(self, v_curr: Vector):
+        super(VectorCoordinatesEncoding, self).__init__(v_curr)
+
+    def encode(self):
+        return f'{self.v.pt_from} -> {self.v.pt_to}'
 
 
 # угол между радиус-векторами в диапазоне [0, 360)
@@ -298,6 +311,18 @@ def main():
     for i in range(vec_len):
         enc4.append(ComplexNumberEncoding(vectors[i]))
     [print(e.encode()) for e in enc4[:SAMPLES]]
+
+    print('\nКодирование координатами концов векторов')
+    enc5 = []
+    for i in range(vec_len):
+        enc5.append(VectorCoordinatesEncoding(vectors[i]))
+    [print(e.encode()) for e in enc5[:SAMPLES]]
+
+    print('\nКодирование в полярных координатах')
+    enc6 = []
+    for i in range(vec_len):
+        enc6.append(VectorCoordinatesEncoding(vectors[i]))
+    [print(e.encode()) for e in enc6[:SAMPLES]]
 
 
     # for v in vectors:
