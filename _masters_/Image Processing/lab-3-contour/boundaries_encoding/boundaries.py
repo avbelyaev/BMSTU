@@ -11,11 +11,12 @@ GREEN = 1
 BLUE = 2
 
 # FILENAME = 'circle.png'
-# FILENAME = 'star.png'
-FILENAME = 'letter.png'
+FILENAME = 'star.png'
+# FILENAME = 'letter.png'
 IMG = io.imread(FILENAME).tolist()
 
-STEP = 17
+STEP = 29
+SAMPLES = 7
 
 
 class Direction(Enum):
@@ -71,9 +72,10 @@ class ThreeAttrBoundary(Boundary):
 
     def __init__(self, v_curr: Vector, v_next: Vector):
         self.len = vector_len(v_curr)
-        self.angle = self._normalize_angle(v_curr, v_next)
-        self.direction = Direction.COUNTER_CLOCKWISE if self.angle > 0 \
+        angle = self._normalize_angle(v_curr, v_next)
+        self.direction = Direction.COUNTER_CLOCKWISE if angle > 0 \
             else Direction.CLOCKWISE
+        self.angle = abs(angle)
 
     # угол [0 360) преобразовать в угол [0 180) со знаком
     # например, 300" == -60"
@@ -83,6 +85,43 @@ class ThreeAttrBoundary(Boundary):
 
     def encode(self) -> str:
         return f'[{self.len:.2f} \tangle:{self.angle:.2f} {self.direction}]'
+
+
+class ThreeDigitCode(Boundary):
+    """
+    трехразрядный код
+    """
+
+    def __init__(self, v_curr: Vector):
+        ox_vector = Vector(Point(0, 0), Point(1, 0))
+        self.code = self._three_digit_code(v_curr, ox_vector)
+
+    def _three_digit_code(self, v1: Vector, v2: Vector) -> str:
+        big_angle = directionwise_angle(v2, v1)
+        code = None
+        if 337.5 <= big_angle < 360:
+            code = 0
+        elif 292.5 <= big_angle < 337.5:
+            code = 1
+        elif 247.5 <= big_angle < 292.5:
+            code = 2
+        elif 202.5 <= big_angle < 247.5:
+            code = 3
+        elif 157.5 <= big_angle < 202.5:
+            code = 4
+        elif 112.5 <= big_angle < 157.5:
+            code = 5
+        elif 67.5 <= big_angle < 112.5:
+            code = 6
+        elif 22.5 <= big_angle < 67.5:
+            code = 7
+        elif big_angle < 22.5:
+            code = 0
+        # в бинарный вид
+        return f'{code}: {code:03b}'
+
+    def encode(self) -> str:
+        return f'{self.code}'
 
 
 # угол между радиус-векторами в диапазоне [0, 360)
@@ -184,28 +223,28 @@ def approximate_contour(contour: list, step) -> list:
     return vectors
 
 
-def three_attr_encoding(vectors: list) -> list:
-    boundaries = []
-    vec_len = len(vectors)
-    for i in range(vec_len):
-        v1 = vectors[i]
-        v2 = vectors[(i + 1) % vec_len]
-        boundaries.append(ThreeAttrBoundary(v1, v2))
-
-    return boundaries
-
-
 def main():
     points = extract_contour_pts(IMG)
     vectors = approximate_contour(points, STEP)
+    vec_len = len(vectors)
+
+    print('\nКодирование по трем признакам')
+    enc1 = []
+    for i in range(vec_len):
+        v1 = vectors[i]
+        v2 = vectors[(i + 1) % vec_len]
+        enc1.append(ThreeAttrBoundary(v1, v2))
+    [print(e.encode()) for e in enc1[:SAMPLES]]
+
+    print('\nКодирование трехразрядным кодом')
+    enc2 = []
+    for i in range(vec_len):
+        enc2.append(ThreeDigitCode(vectors[i]))
+    [print(e.encode()) for e in enc2[:SAMPLES]]
 
     for v in vectors:
         plt.plot([v.pt_from.x, v.pt_to.x], [v.pt_from.y, v.pt_to.y])
     plt.show()
-
-    enc1 = three_attr_encoding(vectors)
-    print('Three attribute encoding')
-    [print(e.encode()) for e in enc1]
 
 
 if __name__ == '__main__':
