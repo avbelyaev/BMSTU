@@ -148,6 +148,27 @@ class ProjectionEncoding(ThreeDigitEncoding):
         return f'{self.projection}'
 
 
+class ComplexNumberEncoding(ProjectionEncoding):
+    """
+    Кодирование восемью комплексными числами
+    """
+
+    def __init__(self, v_curr: Vector):
+        super(ComplexNumberEncoding, self).__init__(v_curr)
+
+    def encode(self) -> str:
+        real = self.projection[0]
+        imag = self.projection[1]
+        if 0 == real and 0 == imag:
+            return '0'
+        elif 0 == real:
+            return f'({imag}i)'
+        elif 0 == imag:
+            return f'({real})'
+        else:
+            return f'({real} + {imag}i)'
+
+
 # угол между радиус-векторами в диапазоне [0, 360)
 def directionwise_angle(v1: Vector, v2: Vector) -> float:
     p1, p2 = v1.to_radius_vector(), v2.to_radius_vector()
@@ -275,8 +296,10 @@ def main():
     print('\nКодирование восемью комплексными числами')
     enc4 = []
     for i in range(vec_len):
-        enc4.append(ProjectionEncoding(vectors[i]))
-    [print(e.encode()) for e in enc3[:SAMPLES]]
+        enc4.append(ComplexNumberEncoding(vectors[i]))
+    [print(e.encode()) for e in enc4[:SAMPLES]]
+
+
     # for v in vectors:
     #     plt.plot([v.pt_from.x, v.pt_to.x], [v.pt_from.y, v.pt_to.y])
     # plt.show()
