@@ -62,17 +62,35 @@ class Encoding:
         raise NotImplementedError
 
 
-class ThreeAttrEncoding(Encoding):
+class PolarCoordinatesEncoding(Encoding):
+    """
+    Кодирование в полярных координатах
+    """
+
+    def __init__(self, v_curr: Vector):
+        self.v_curr = v_curr
+        self.angle = self._polar_angle(v_curr)
+        self.len = vector_len(v_curr)
+
+    def _polar_angle(self, v: Vector) -> float:
+        ox_vector = Vector(Point(0, 0), Point(1, 0))
+        radius_vec = Vector(Point(0, 0), v.pt_to)
+        return directionwise_angle(radius_vec, ox_vector)
+
+    def encode(self) -> str:
+        return f'{self.len:.1f} + cos({self.angle:.1f})'
+
+
+class ThreeAttrEncoding(PolarCoordinatesEncoding):
     """
     Элемент границы, закодированной по трем признакам:
     (длина вектора, угол, направление поворота к следующему вектору)
     """
 
     def __init__(self, v_curr: Vector, v_next: Vector):
-        self.len = vector_len(v_curr)
+        super(ThreeAttrEncoding, self).__init__(v_curr)
         angle = self._normalize_angle(v_curr, v_next)
-        self.direction = Direction.COUNTER_CLOCKWISE if angle > 0 \
-            else Direction.CLOCKWISE
+        self.direction = Direction.COUNTER_CLOCKWISE if angle > 0 else Direction.CLOCKWISE
         self.angle = abs(angle)
 
     # угол [0 360) преобразовать в угол [0 180) со знаком
@@ -82,7 +100,7 @@ class ThreeAttrEncoding(Encoding):
         return big_angle if big_angle <= 180 else big_angle - 360
 
     def encode(self) -> str:
-        return f'[{self.len:.2f} \tangle:{self.angle:.2f} {self.direction}]'
+        return f'[{self.len:.1f} \tangle:{self.angle:.1f} {self.direction}]'
 
 
 class ThreeDigitEncoding(Encoding):
@@ -321,13 +339,12 @@ def main():
     print('\nКодирование в полярных координатах')
     enc6 = []
     for i in range(vec_len):
-        enc6.append(VectorCoordinatesEncoding(vectors[i]))
+        enc6.append(PolarCoordinatesEncoding(vectors[i]))
     [print(e.encode()) for e in enc6[:SAMPLES]]
 
-
-    # for v in vectors:
-    #     plt.plot([v.pt_from.x, v.pt_to.x], [v.pt_from.y, v.pt_to.y])
-    # plt.show()
+    for v in vectors:
+        plt.plot([v.pt_from.x, v.pt_to.x], [v.pt_from.y, v.pt_to.y])
+    plt.show()
 
 
 if __name__ == '__main__':
