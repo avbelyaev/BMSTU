@@ -34,6 +34,7 @@ void get_tokens(const string &s, const unordered_set<char> &delimiters, vector<s
     }
 }
 
+// make dict
 void get_type_freq(const vector<string> &tokens, map<string, int> &freqdi)
 {
     for (const string &token: tokens) {
@@ -50,4 +51,23 @@ void get_types(const vector<string> &tokens, vector<string> &wtypes)
 
 //    sort lexicographically
     sort(wtypes.begin(), wtypes.end());
+}
+
+void get_x_length_words(const vector<string> &wtypes, int x, vector<string> &words)
+{
+    for (const string &s: wtypes) {
+        if (s.length() >= x) {
+            words.push_back(s);
+        }
+    }
+}
+
+void get_x_freq_words(const map<string, int> &freqdi, int x, vector<string> &words)
+{
+    for (const pair<const string, int> &entry: freqdi) {
+        if (entry.second >= x) {
+            words.push_back(entry.first);
+        }
+    }
+    sort(words.begin(), words.end());
 }

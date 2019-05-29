@@ -45,18 +45,18 @@ int main()
 	for (auto w : wtypes) sum += w.length();
 	int med = tokens.size() > 0 ? (sum + wtypes.size() - 1)/wtypes.size() : 0;
 
-//	// Формирование списка слов, длина которых не ниже средней.
-//	vector<string> long_wtypes;
-//	get_x_length_words(wtypes, med, long_wtypes);
-//	copy(long_wtypes.begin(), long_wtypes.end(), owords);
-//	cout << endl;
-//
-//	// Формирование списка слов, встречающихся больше одного раза.
-//	vector<string> multi_wtypes;
-//	get_x_freq_words(freqdi, 2, multi_wtypes);
-//	copy(multi_wtypes.begin(), multi_wtypes.end(), owords);
-//	cout << endl;
-//
+	// Формирование списка слов, длина которых не ниже средней.
+	vector<string> long_wtypes;
+	get_x_length_words(wtypes, 5, long_wtypes);
+	copy(long_wtypes.begin(), long_wtypes.end(), owords);
+	cout << endl;
+
+	// Формирование списка слов, встречающихся больше одного раза.
+	vector<string> multi_wtypes;
+	get_x_freq_words(freqdi, 2, multi_wtypes);
+	copy(multi_wtypes.begin(), multi_wtypes.end(), owords);
+	cout << endl;
+
 //	// Составление словаря распределения слов по длинам.
 //	map<int, vector<string> > lengthdi;
 //	get_words_by_length_dict(wtypes, lengthdi);
