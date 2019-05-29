@@ -1,6 +1,3 @@
-//
-// Created by anthony on 2019-05-29.
-//
 
 #include <string>
 #include <vector>
@@ -70,4 +67,12 @@ void get_x_freq_words(const map<string, int> &freqdi, int x, vector<string> &wor
         }
     }
     sort(words.begin(), words.end());
+}
+
+void get_words_by_length_dict(const vector<string> &wtypes, map<int, vector<string> > &lengthdi)
+{
+    for (const string &s: wtypes) {
+        int len = s.length();
+        lengthdi[len].push_back(s);
+    }
 }

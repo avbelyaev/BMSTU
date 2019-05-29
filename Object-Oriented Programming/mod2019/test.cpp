@@ -57,14 +57,14 @@ int main()
 	copy(multi_wtypes.begin(), multi_wtypes.end(), owords);
 	cout << endl;
 
-//	// Составление словаря распределения слов по длинам.
-//	map<int, vector<string> > lengthdi;
-//	get_words_by_length_dict(wtypes, lengthdi);
-//	for (auto p : lengthdi) {
-//		cout << p.first << " => ";
-//		copy(p.second.begin(), p.second.end(), owords);
-//		cout << endl;
-//	}
+	// Составление словаря распределения слов по длинам.
+	map<int, vector<string> > lengthdi;
+	get_words_by_length_dict(wtypes, lengthdi);
+	for (auto p : lengthdi) {
+		cout << p.first << " => ";
+		copy(p.second.begin(), p.second.end(), owords);
+		cout << endl;
+	}
 
 	return 0;
 }
