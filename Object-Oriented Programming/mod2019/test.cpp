@@ -13,9 +13,9 @@ const unordered_set<char> delimiters {
 
 int main()
 {
-    string text = "Lorem~ ipsum! dolor@ sit# amet%, ^con &sectetur *adipiscing elit, "
-                  "`sed {do} \\eiusmod |tempor, \"ut! 'labore /et \ndolore? \tmagna "
-                  "aliqua. [Ut] enim ad minim veniam, quis ";
+    string text = "Lorem~  lorem ipsum! dolor@ sit# amet%, ^con &sectetur *adipiscing elit, "
+                  "`sed {do} \\eiusmod |tempor, \"ut! ad'labore /et \ndolore? \tmagna "
+                  "aliqua. [Ut] enim ad minim veniam, ad quis lorem";
 	
 	// Итератор для вывода слов через пробел.
 	ostream_iterator<string> owords(cout, " ");
@@ -26,25 +26,25 @@ int main()
 	copy(tokens.begin(), tokens.end(), owords);
 	cout << endl;
 
-//	// Составление частотного словаря.
-//	map<string, int> freqdi;
-//	get_type_freq(tokens, freqdi);
-//	for (auto p : freqdi) {
-//		cout << "(" << p.first << " => " << p.second << ") ";
-//	}
-//	cout << endl;
-//
-//	// Составление списка уникальных слов.
-//	vector<string> wtypes;
-//	get_types(tokens, wtypes);
-//	copy(wtypes.begin(), wtypes.end(), owords);
-//	cout << endl;
-//
-//	// Вычисление средней длины уникальных слов.
-//	int sum = 0;
-//	for (auto w : wtypes) sum += w.length();
-//	int med = tokens.size() > 0 ? (sum + wtypes.size() - 1)/wtypes.size() : 0;
-//
+	// Составление частотного словаря.
+	map<string, int> freqdi;
+	get_type_freq(tokens, freqdi);
+	for (auto p : freqdi) {
+		cout << "(" << p.first << " => " << p.second << ") ";
+	}
+	cout << endl;
+
+	// Составление списка уникальных слов.
+	vector<string> wtypes;
+	get_types(tokens, wtypes);
+	copy(wtypes.begin(), wtypes.end(), owords);
+	cout << endl;
+
+	// Вычисление средней длины уникальных слов.
+	int sum = 0;
+	for (auto w : wtypes) sum += w.length();
+	int med = tokens.size() > 0 ? (sum + wtypes.size() - 1)/wtypes.size() : 0;
+
 //	// Формирование списка слов, длина которых не ниже средней.
 //	vector<string> long_wtypes;
 //	get_x_length_words(wtypes, med, long_wtypes);
