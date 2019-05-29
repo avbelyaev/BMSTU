@@ -7,6 +7,7 @@
 #include <regex>
 #include <sstream>
 #include <set>
+#include "textstats.hpp"
 
 using namespace std;
 
