@@ -9,7 +9,7 @@ using namespace std;
 vector<string> make_bigram(const string &str);
 
 
-class Word {
+class Typo {
 public:
     string original;
     vector<string> bigram;
@@ -19,14 +19,14 @@ public:
     float curr_similarity = 0;
     int curr_frequency = 0;
 
-    explicit Word(const string &s);
+    explicit Typo(const string &s);
     void try_update_candidate(const string &other, vector<string> &other_bigrams, int other_freq);
 
 private:
     float count_similarity(vector<string> &w1, vector<string> &w2);
 };
 
-Word::Word(const string &s)
+Typo::Typo(const string &s)
 {
     this->original = s;
     this->bigram = make_bigram(s);
@@ -34,7 +34,7 @@ Word::Word(const string &s)
     sort(this->bigram.begin(), this->bigram.end());
 }
 
-void Word::try_update_candidate(const string &other, vector<string> &other_bigrams, int other_freq)
+void Typo::try_update_candidate(const string &other, vector<string> &other_bigrams, int other_freq)
 {
     float new_similarity = this->count_similarity(this->bigram, other_bigrams);
     if (0.0 == new_similarity) {
@@ -65,7 +65,7 @@ void Word::try_update_candidate(const string &other, vector<string> &other_bigra
     }
 }
 
-float Word::count_similarity(vector<string> &w1, vector<string> &w2)
+float Typo::count_similarity(vector<string> &w1, vector<string> &w2)
 {
     // this.bigrams are already sorted
     sort(w2.begin(), w2.end());
@@ -100,22 +100,17 @@ vector<string> make_bigram(const string &str)
 
 
 int main() {
-    string input = "prepearing\ngoverment\ncomming\nquickle\njouvenile\n";
-//    string input = "beatiful\ntogegether\nenvolving\nilness\nepidemia\n";
-//    string input = "anual\nsincerly\ncluching\nmentaly\nballons\ngirle\nbrethless\n";
-//    string input = "finaly\nexausted\ngrabed\npubliclly\nexcelent\ncontageous\nbegining\nnobady\nhappenin\ninnecessary\n"; //5
-//    string input = "epidemy\nbycicle\ndamadged\nstollen\ndeliceaus\npreventions\nhollidays\nfamilly\nradios\nsympthoms\n"; //6
-//    string input = "affraid\nmeasurment\nappologized\nsimptoms\natribute\npannic\nsincerly\nhuredly\nstoped\nacused\n";      //7
+//    string input = "prepearing\ngoverment\ncomming\nquickle\njouvenile\n";
 
-//    string input( (istreambuf_iterator<char>(cin)),(istreambuf_iterator<char>()) );
-//    input += "\n";
+    string input( (istreambuf_iterator<char>(cin)),(istreambuf_iterator<char>()) );
+    input += "\n";
 
-    vector<Word> words;
+    vector<Typo> typos;
 
     stringstream ss(input);
     string buff;
     while (getline(ss, buff, '\n')) {
-        words.emplace_back(buff);
+        typos.emplace_back(buff);
     }
 
     ifstream input_file("count_big.txt");
@@ -124,14 +119,16 @@ int main() {
     int freq;
     while (input_file >> correct_word >> freq) {
         vector<string> correct_word_bigram = make_bigram(correct_word);
-        for (Word &w: words) {
+        for (Typo &w: typos) {
             w.try_update_candidate(correct_word, correct_word_bigram, freq);
         }
     }
     input_file.close();
 
-    for (Word &w: words) {
+    for (Typo &w: typos) {
 //        cout << w.original << " -> " << w.curr_candidate << endl;
         cout << w.curr_candidate << endl;
     }
+
+    return 0;
 }
