@@ -37,9 +37,6 @@ Typo::Typo(const string &s)
 void Typo::try_update_candidate(const string &other, vector<string> &other_bigrams, int other_freq)
 {
     float new_similarity = this->count_similarity(this->bigram, other_bigrams);
-    if (0.0 == new_similarity) {
-        return;
-    }
 
 //  check similarity coefficient
     if (new_similarity > this->curr_similarity) {
