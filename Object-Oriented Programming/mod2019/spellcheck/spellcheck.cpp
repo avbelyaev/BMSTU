@@ -9,6 +9,8 @@ using namespace std;
 
 vector<string> make_bigram(const string &str);
 
+vector<string> SINGLETON_VEC;
+
 
 class Typo {
 public:
@@ -65,8 +67,7 @@ void Typo::try_update_candidate(const string &other, vector<string> &other_bigra
 
 float Typo::count_similarity(vector<string> &w1, vector<string> &w2)
 {
-    // this.bigrams are already sorted
-    sort(w2.begin(), w2.end());
+    // both bigram vectors are already sorted
 
     vector<string> intersect_vect;
     set_intersection(w1.begin(),w1.end(), w2.begin(),w2.end(), back_inserter(intersect_vect));
@@ -83,7 +84,9 @@ float Typo::count_similarity(vector<string> &w1, vector<string> &w2)
 vector<string> make_bigram(const string &str)
 {
     if (1 == str.length()) {
-        return {str};
+        SINGLETON_VEC.clear();
+        SINGLETON_VEC.push_back(str);
+        return SINGLETON_VEC;
     }
     int len = str.size() - 1;
 
@@ -92,6 +95,10 @@ vector<string> make_bigram(const string &str)
     for(int i = 0; i < len; ++i) {
         bigrams.push_back(string() + str[i] + str[i + 1]);
     }
+
+    // sort bigram
+    sort(bigrams.begin(), bigrams.end());
+
     return bigrams;
 }
 
@@ -108,7 +115,7 @@ int main() {
     stringstream ss(input);
     string buff;
     while (getline(ss, buff, '\n')) {
-        typos.emplace_back(buff);
+        typos.push_back(Typo(buff));
     }
 
     ifstream input_file("count_big.txt");
