@@ -1,4 +1,3 @@
-from math import sqrt
 import numpy as np
 
 np.set_printoptions(precision=3)
@@ -9,7 +8,7 @@ DOCS = [['w0', 'w1', 'w1'],
         ['w0', 'w2', 'w2']]
 
 ITERS = 5
-THEMES = 3
+THEMES = 2
 
 
 def rand_init_matrix(cols: int, rows: int) -> list:
@@ -21,7 +20,7 @@ def rand_init_matrix(cols: int, rows: int) -> list:
     for i in range(len(matrix)):
         s = sum(matrix[i])
         for j in range(len(matrix[i])):
-            matrix[i][j] /= sqrt(s)
+            matrix[i][j] /= s
     return np.array(matrix).transpose().tolist()
 
 
