@@ -20,25 +20,29 @@ void get_tokens(const string &s, const unordered_set<char> &delimiters, vector<s
     }
 
     locale loc;
-    string str_lower;
-    for(const char &c: s) {
-        str_lower += tolower(c, loc);
-    }
-
-    stringstream stringStream(str_lower);
+    stringstream stringStream(s);
     string line;
+    string line_lower;
     while(getline(stringStream, line))
     {
+        // to lowercase
+        line_lower = "";
+        for(const char &c: line) {
+            line_lower += tolower(c, loc);
+        }
+
+        // find and replace
         size_t prev = 0, pos;
-        while ((pos = line.find_first_of(delimiter_str, prev)) != std::string::npos)
+        while ((pos = line_lower.find_first_of(delimiter_str, prev)) != std::string::npos)
         {
             if (pos > prev) {
-                tokens.push_back(line.substr(prev, pos-prev));
+                tokens.push_back(line_lower.substr(prev, pos - prev));
             }
-            prev = pos+1;
+            prev = pos + 1;
         }
-        if (prev < line.length())
-            tokens.push_back(line.substr(prev, std::string::npos));
+        if (prev < line_lower.length()) {
+            tokens.push_back(line_lower.substr(prev, std::string::npos));
+        }
     }
 }
 
