@@ -1,7 +1,9 @@
 
 #include <iostream>
 #include <iterator>
- 
+#include <sstream>
+#include <fstream>
+
 #include "textstats.hpp"
 
 // Множество разделителей слов в тексте.
@@ -13,9 +15,16 @@ const unordered_set<char> delimiters {
 
 int main()
 {
-    string text = "Lorem~  lorem ipsum! dolor@ sit# amet%, ^con &sectetur *adipiscing elit, "
+    string text = "Lorem~   lorem ipsum! dolor@ sit# amet%, ^con &sectetur *adipiscing elit, "
                   "`sed {do} \\eiusmod |tempor, \"ut! ad'labore /et \ndolore? \tmagna "
                   "aliqua. [Ut] enim ad minim veniam, ad quis lorem";
+
+
+    std::ifstream t("10.txt");
+    std::stringstream buffer;
+    buffer << t.rdbuf();
+    text = buffer.str();
+
 	
 	// Итератор для вывода слов через пробел.
 	ostream_iterator<string> owords(cout, " ");
@@ -47,7 +56,7 @@ int main()
 
 	// Формирование списка слов, длина которых не ниже средней.
 	vector<string> long_wtypes;
-	get_x_length_words(wtypes, 5, long_wtypes);
+	get_x_length_words(wtypes, med, long_wtypes);
 	copy(long_wtypes.begin(), long_wtypes.end(), owords);
 	cout << endl;
 

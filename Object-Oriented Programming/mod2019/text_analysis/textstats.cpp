@@ -6,6 +6,7 @@
 #include <iostream>
 #include <regex>
 #include <sstream>
+#include <locale>
 #include <set>
 #include "textstats.hpp"
 
@@ -13,22 +14,31 @@ using namespace std;
 
 void get_tokens(const string &s, const unordered_set<char> &delimiters, vector<string> &tokens)
 {
-//    remove delimiters
-    regex rm_delims("[^\\s\\w]+");
-    string no_delims = regex_replace(s, rm_delims, " ");
+    string delimiter_str;
+    for (const char &delim: delimiters) {
+        delimiter_str += delim;
+    }
 
-//    set 1-len spaces
-    regex rm_spaces("\\s+");
-    string no_spaces = regex_replace(no_delims, rm_spaces, " ");
+    locale loc;
+    string str_lower;
+    for(const char &c: s) {
+        str_lower += tolower(c, loc);
+    }
 
-//    lowercase
-    std::transform(no_spaces.begin(), no_spaces.end(), no_spaces.begin(), ::tolower);
-
-//    tokenize
-    stringstream str_stream(no_spaces);
-    string buffer;
-    while (str_stream >> buffer) {
-        tokens.push_back(buffer);
+    stringstream stringStream(str_lower);
+    string line;
+    while(getline(stringStream, line))
+    {
+        size_t prev = 0, pos;
+        while ((pos = line.find_first_of(delimiter_str, prev)) != std::string::npos)
+        {
+            if (pos > prev) {
+                tokens.push_back(line.substr(prev, pos-prev));
+            }
+            prev = pos+1;
+        }
+        if (prev < line.length())
+            tokens.push_back(line.substr(prev, std::string::npos));
     }
 }
 
@@ -48,7 +58,7 @@ void get_types(const vector<string> &tokens, vector<string> &wtypes)
     wtypes = unique_tokens;
 
 //    sort lexicographically
-    sort(wtypes.begin(), wtypes.end());
+//    sort(wtypes.begin(), wtypes.end());
 }
 
 void get_x_length_words(const vector<string> &wtypes, int x, vector<string> &words)
