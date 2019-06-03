@@ -5,19 +5,7 @@
 using namespace std;
 
 
-//template <class T>
-class Formula {
-public:
-    int arg1;
-    int arg2;
-    string op;
-
-    Formula(int arg1_, int arg2_, const string& op_) {
-        arg1 = arg1_;
-        arg2 = arg2_;
-        op = op_;
-    }
-};
+enum Op { EQ, ADD, MUL };
 
 
 //template <class T>
@@ -25,53 +13,87 @@ class Cell {
 
 
 public:
+    bool isUsed = false;
     int data;
-    bool isData;
-    Cell* c1;
-    Cell* c2;
-    string op;
+    bool isData = false;
+    Cell* l;
+    Cell* r;
+    Op op;
+
+    Cell() {
+        isUsed = false;
+        l = nullptr;
+        r = nullptr;
+    }
 
     Cell(int value_) {
         data = value_;
         isData = true;
+        isUsed = true;
+        l = nullptr;
+        r = nullptr;
     }
 
-    Cell(Cell& c1_, Cell& c2_, string op_) {
-        c1 = &c1_;
-        c2 = &c2_;
+    Cell(Cell& c1_, Cell& c2_, Op op_) {
+        l = &c1_;
+        r = &c2_;
         op = op_;
         isData = false;
+        isUsed = true;
     };
 
-    Cell(Cell& c1_, int value, string op_) {
-        c1 = &c1_;
+    Cell(Cell& c1_, int value, Op op_) {
+        l = &c1_;
+        r = new Cell(value);
         op = op_;
         isData = false;
+        isUsed = true;
     };
+
+    Cell(Cell& c1_, Op op_) {
+        l = &c1_;
+        r = nullptr;
+        op = op_;
+        isData = false;
+        isUsed = true;
+    }
 
     int calc() {
-        if (isData) {
-            return data;
+        if (isUsed) {
+            if (isData) {
+                return data;
+            }
+            switch (op) {
+                case EQ:
+                    return l->calc();
+                case ADD:
+                    return l->calc() + r->calc();
+                case MUL:
+                    return l->calc() * r->calc();
+
+                default:
+                    cout << "ERR CALC";
+                    return 0;
+            }
         }
-        if ("+" == op) {
-            return c1->calc() + c2->calc();
-        }
-        return 0;
     }
 
-    Cell& operator= (const Cell& other_cell) {
-        data = other_cell.data;
-        return *this;
-    }
+    Cell& operator= (Cell& other_cell) = default;
 
     Cell& operator= (int other_data) {
         data = other_data;
+        isUsed = true;
+        isData = true;
         return *this;
     }
 
-    friend Cell& operator+ (Cell& arg1, Cell& arg2) {
-        Cell* c3 = new Cell(arg1, arg2, "+");
-//        Cell c3(arg1, arg2, "+");
+    friend Cell& operator+ (Cell& a, Cell& b) {
+        Cell* c3 = new Cell(a, b, ADD);
+        return *c3;
+    }
+
+    friend Cell& operator* (Cell& a, int b) {
+        Cell* c3 = new Cell(a, b, MUL);
         return *c3;
     }
 
@@ -101,22 +123,26 @@ public:
 int main() {
 
 //    SuperCalc s(1, 10);
-//    Cell c1 = s(0, 10);
+//    Cell l = s(0, 10);
 //
-//    cout << c1.data << endl;
+//    cout << l.data << endl;
 //
 //    s(0, 10) = 5;
-//    c1 = s(0, 10);
-//    cout << c1.data << endl;
+//    l = s(0, 10);
+//    cout << l.data << endl;
 
-    Cell c1(1);
-    Cell c2(2);
+    Cell c1;
+    Cell c2;
 
     Cell c3 = c1 + c2;
+    c1 = 2;
+    c2 = 3;
     cout << c3.calc() << endl;
 
     c1 = 5;
+    cout << c3.calc() << endl;
 
+    c1 = c2 * 2;
     cout << c3.calc() << endl;
 
     return 0;
