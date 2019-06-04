@@ -45,6 +45,7 @@ void Typo::try_update_candidate(const string &other, vector<string> &other_bigra
     if (new_similarity > this->curr_similarity) {
         this->curr_candidate = other;
         this->curr_similarity = new_similarity;
+        this->curr_frequency = other_freq;
 
 //  proper float comparison: abs(a - b) < 0.01
     } else if (new_similarity == this->curr_similarity) {
@@ -108,14 +109,13 @@ int main() {
 //    string input = "prepearing\ngoverment\ncomming\nquickle\njouvenile\n";
 
     string input( (istreambuf_iterator<char>(cin)),(istreambuf_iterator<char>()) );
-    input += "\n";
 
     vector<Typo> typos;
 
     stringstream ss(input);
     string buff;
     while (getline(ss, buff, '\n')) {
-        typos.push_back(Typo(buff));
+        typos.emplace_back(buff);
     }
 
     ifstream input_file("count_big.txt");
