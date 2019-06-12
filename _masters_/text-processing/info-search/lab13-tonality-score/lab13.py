@@ -1,9 +1,10 @@
+from datetime import datetime
 from xml.dom import minidom
-from xml.dom.minidom import Element
-
 import nltk
 from nltk.corpus import stopwords
-
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn import metrics
 from lab16 import clean_up_sentence, normalize_sentence
 
 TRAIN_DATA = 'news_eval_train.xml'
@@ -17,10 +18,11 @@ STOP_WORDS = stopwords.words('russian')
 
 
 class Cite:
-    def __init__(self, s: Element):
-        self.speech = s.getElementsByTagName('speech')[0].childNodes[0].nodeValue.strip()
-        self.evaluation = s.getElementsByTagName('evaluation')[0].childNodes[0].nodeValue.strip()
+    def __init__(self, speech_: str, eval_: str):
+        self.speech = speech_.strip()
+        self.evaluation = eval_.strip()
         self.tokenized = tokenize(self.speech)
+        self.tokenized_str = ' '.join(self.tokenized)
 
     def __str__(self):
         return f'{self.evaluation}: {self.speech}'
@@ -50,23 +52,49 @@ def tokenize(text: str) -> list:
     return flatten(no_stopwords_sents)
 
 
+def classify(vectorizer, train_cites: list, test_cites: list):
+    tokenized_train = [c.tokenized_str for c in train_cites]
+    x_train = vectorizer.fit_transform(tokenized_train).toarray()
+    y_train = [c.evaluation for c in train_cites]
+
+    tokenized_test = [c.tokenized_str for c in test_cites]
+    x_test = vectorizer.transform(tokenized_test).toarray()
+    y_test = [c.evaluation for c in test_cites]
+
+    classifier = AdaBoostClassifier(n_estimators=10)
+    classifier.fit(x_train, y_train)
+    predicted = classifier.predict(x_test)
+
+    print(metrics.classification_report(y_test, predicted))
+
+
 def parse(filename: str) -> list:
     xmldoc = minidom.parse(filename)
     document = xmldoc.getElementsByTagName('document')[0]
     sentences = document.getElementsByTagName('sentence')
 
-    citations = [Cite(s) for s in sentences]
+    citations = []
+    for s in sentences:
+        speech = s.getElementsByTagName('speech')[0].childNodes[0].nodeValue
+        evaluation = s.getElementsByTagName('evaluation')[0].childNodes[0].nodeValue.strip()
+        if evaluation in TONALITY:
+            citations.append(Cite(speech, evaluation))
+
     return citations
 
 
 def main():
-    all_train = parse(TRAIN_DATA_2)
-    train_cites = list(filter(lambda cite: cite.evaluation in TONALITY, all_train))
-    print(f'train: {len(all_train)} -> {len(train_cites)}')
-    #
-    # all_test = parse(TEST_DATA)
-    # test_cites = list(filter(lambda cite: cite.evaluation in TONALITY, all_test))
-    # print(f'test : {len(all_test)} -> {len(test_cites)}')
+    print(f'parse train: {datetime.now()}')
+    train_cites = parse(TRAIN_DATA)
+
+    print(f'parse test:  {datetime.now()}')
+    test_cites = parse(TEST_DATA)
+
+    print(f'classify:    {datetime.now()}')
+    # vectorizer = TfidfVectorizer()
+    vectorizer = CountVectorizer()
+    classify(vectorizer, train_cites, test_cites)
+    print(f'classified:  {datetime.now()}')
 
 
 if __name__ == '__main__':
