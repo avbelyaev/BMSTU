@@ -1,6 +1,7 @@
 from datetime import datetime
 from xml.dom import minidom
 import nltk
+import numpy as np
 from nltk.corpus import stopwords
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
@@ -8,10 +9,11 @@ from sklearn import metrics
 from lab16 import clean_up_sentence, normalize_sentence
 
 TRAIN_DATA = 'news_eval_train.xml'
-TRAIN_DATA_2 = 'news_eval_train_SHORT.xml'
 TEST_DATA = 'news_eval_test.xml'
 
 TONALITY = ['+', '-', '0']
+BOOL_VECT_TRUE = 1
+BOOL_VECT_FALSE = 0
 
 nltk.download('stopwords')
 STOP_WORDS = stopwords.words('russian')
@@ -23,12 +25,6 @@ class Cite:
         self.evaluation = eval_.strip()
         self.tokenized = tokenize(self.speech)
         self.tokenized_str = ' '.join(self.tokenized)
-
-    def __str__(self):
-        return f'{self.evaluation}: {self.speech}'
-
-    def __repr__(self):
-        return self.__str__()
 
 
 # [[1, 2, 3], [4], [5, 6]] -> [1, 2, 3, 4, 5, 6]
@@ -52,9 +48,11 @@ def tokenize(text: str) -> list:
     return flatten(no_stopwords_sents)
 
 
-def classify(vectorizer, train_cites: list, test_cites: list):
+def classify(vectorizer, train_cites: list, test_cites: list, boolean_vectorizer=False):
     tokenized_train = [c.tokenized_str for c in train_cites]
     x_train = vectorizer.fit_transform(tokenized_train).toarray()
+    if boolean_vectorizer:
+        x_train = np.where(x_train > 0, BOOL_VECT_TRUE, BOOL_VECT_FALSE)
     y_train = [c.evaluation for c in train_cites]
 
     tokenized_test = [c.tokenized_str for c in test_cites]
@@ -66,6 +64,7 @@ def classify(vectorizer, train_cites: list, test_cites: list):
     predicted = classifier.predict(x_test)
 
     print(metrics.classification_report(y_test, predicted))
+    print(f'classified:  {datetime.now()}')
 
 
 def parse(filename: str) -> list:
@@ -93,8 +92,8 @@ def main():
     print(f'classify:    {datetime.now()}')
     # vectorizer = TfidfVectorizer()
     vectorizer = CountVectorizer()
-    classify(vectorizer, train_cites, test_cites)
-    print(f'classified:  {datetime.now()}')
+
+    classify(vectorizer, train_cites, test_cites, boolean_vectorizer=True)
 
 
 if __name__ == '__main__':
