@@ -17,6 +17,10 @@ BOOL_VECT_FALSE = 0
 
 nltk.download('stopwords')
 STOP_WORDS = stopwords.words('russian')
+STOP_WORDS_EXCEPTIONS = [
+    'все', 'ничего', 'никогда', 'наконец', 'больше', 'хорошо', 'лучше',
+    'всегда', 'конечно', 'всю', 'такой', 'впрочем', 'так', 'можно', 'даже']
+STOP_WORDS = list(set(STOP_WORDS) - set(STOP_WORDS_EXCEPTIONS))
 
 
 class Cite:
