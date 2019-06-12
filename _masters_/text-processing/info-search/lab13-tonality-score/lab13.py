@@ -1,4 +1,5 @@
 from xml.dom import minidom
+from xml.dom.minidom import Element
 
 import nltk
 from nltk.corpus import stopwords
@@ -16,11 +17,9 @@ STOP_WORDS = stopwords.words('russian')
 
 
 class Cite:
-    def __init__(self, _id: str, speech: str, evaluation: str, url: str):
-        self._id = _id.strip()
-        self.speech = speech.strip()
-        self.evaluation = evaluation.strip()
-        self.url = url.strip()
+    def __init__(self, s: Element):
+        self.speech = s.getElementsByTagName('speech')[0].childNodes[0].nodeValue.strip()
+        self.evaluation = s.getElementsByTagName('evaluation')[0].childNodes[0].nodeValue.strip()
         self.tokenized = tokenize(self.speech)
 
     def __str__(self):
@@ -56,15 +55,7 @@ def parse(filename: str) -> list:
     document = xmldoc.getElementsByTagName('document')[0]
     sentences = document.getElementsByTagName('sentence')
 
-    citations = []
-    for s in sentences:
-        sid = s.attributes['id'].value
-        speech = s.getElementsByTagName('speech')[0].childNodes[0].nodeValue
-        evaluation = s.getElementsByTagName('evaluation')[0].childNodes[0].nodeValue
-        url = s.getElementsByTagName('url')[0].childNodes[0].nodeValue
-
-        citations.append(Cite(sid, speech, evaluation, url))
-
+    citations = [Cite(s) for s in sentences]
     return citations
 
 
