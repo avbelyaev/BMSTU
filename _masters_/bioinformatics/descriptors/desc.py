@@ -50,7 +50,7 @@ def main():
         reality.append(predicted_lambda_len)
         print(predicted_lambda_len)
 
-    slope, intercept, r_value, p_value, std_err = linregress(expectation, reality)
+    slope, intercept, r_value, p_value, std_err = linregress(reality, expectation)
     print(slope, intercept, r_value, p_value, std_err)
     # for t in TRAIN:
     #     m = Chem.MolFromSmiles(t.smiles)
