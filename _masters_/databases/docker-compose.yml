@@ -26,6 +26,17 @@ services:
     depends_on:
       - xpostgres
 
+  xsqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-CTP3.2-ubuntu
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: Pa55w0rd
+    ports:
+      - 1433:1433
+#      not supported on Mac
+#    volumes:
+#      - ./sqlserver-data-ics:/var/opt/mssql
+
 networks:
   postgres-net:
     driver: bridge

@@ -13,7 +13,7 @@ docker run -p 3001:80 \
 
 ```
 
-- проверка
+- проверка postgres
 
 ```postgres-sql
 create table Tests
@@ -30,4 +30,21 @@ insert into Tests values
 delete from Tests
 
 select * from Tests
+```
+
+- проверка SQL server (creds: `sa/Pa55w0rd`)
+
+```postgres-psql
+CREATE DATABASE TestDB
+
+SELECT Name from sys.Databases
+GO
+
+USE TestDB
+CREATE TABLE Inventory (id INT, name NVARCHAR(50), quantity INT)
+INSERT INTO Inventory VALUES (1, 'banana', 150);
+INSERT INTO Inventory VALUES (2, 'orange', 154);
+GO
+
+select * from Inventory
 ```
