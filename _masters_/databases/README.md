@@ -48,3 +48,24 @@ GO
 
 select * from Inventory
 ```
+
+
+- oracle (`jdbc:oracle:thin:@localhost:1521:xe`, `system/oracle`):
+
+```oracle-sql
+select banner from v$version where rownum = 1;
+
+ALTER SESSION SET CURRENT_SCHEMA = "SYSTEM";
+
+CREATE TABLE customers
+( customer_id number(10) NOT NULL,
+  customer_name varchar2(50) NOT NULL,
+  city varchar2(50)
+);
+
+insert into customers
+(customer_id, customer_name, city) VALUES
+(1, 'anthony', 'moscow');
+
+select * from customers;
+```
