@@ -33,9 +33,17 @@ services:
       SA_PASSWORD: Pa55w0rd
     ports:
       - 1433:1433
-#      not supported on Mac
-#    volumes:
-#      - ./sqlserver-data-ics:/var/opt/mssql
+#     volume not supported on Mac
+
+#  xsybase:
+##  это дерьмо весит 2+ гб!
+#    image: datagrip/sybase
+#    environment:
+#      SYBASE_DB: ics
+#      SYBASE_USER: ics
+#      SYBASE_PASSWORD: ics
+#    ports:
+#      - 5000:5000
 
 networks:
   postgres-net:
