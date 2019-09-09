@@ -1,0 +1,32 @@
+version: '3.1'
+
+services:
+  xpostgres:
+    image: postgres:10.10
+    environment:
+      POSTGRES_DB: ics
+      POSTGRES_USER: ics
+      POSTGRES_PASSWORD: ics
+    ports:
+      - 5432:5432
+    volumes:
+      - ./postgres-data-ics:/var/lib/postgresql/data
+    networks:
+      - postgres-net
+
+  xpgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ics@a.com
+      PGADMIN_DEFAULT_PASSWORD: ics
+    ports:
+      - 4000:80
+    networks:
+      - postgres-net
+    depends_on:
+      - xpostgres
+
+networks:
+  postgres-net:
+    driver: bridge
+
