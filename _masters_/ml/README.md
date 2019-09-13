@@ -1,6 +1,7 @@
 # ML
 
-## Usage
+## Image editor. lab 1
+#### Usage
 
 - set up venv
 ```bash
@@ -19,7 +20,7 @@ ImgEditor('source.png') \
     .save('dest.png')
 ```
 
-## Example
+#### Example
 
 ```bash
 python editor.py
