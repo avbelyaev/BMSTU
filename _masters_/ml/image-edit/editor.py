@@ -2,8 +2,9 @@ from enum import Enum
 from typing import Tuple
 
 import cv2
+import numpy as np
 
-SOURCE_IMG_PATH = 'yoba.png'
+SOURCE_IMG_PATH = 'face.png'
 RESULT_IMG_PATH = 'res.png'
 
 
@@ -16,6 +17,9 @@ class RotationPoint(Enum):
 
 
 class ImgEditor:
+    """
+    Manipulate the image in the Builder-pattern-like way
+    """
     def __init__(self, img_path: str):
         self._img_path = img_path
         self._img = cv2.imread(img_path)
@@ -23,20 +27,31 @@ class ImgEditor:
         self._cols = self._img.shape[1]
         self._shape = (self._cols, self._rows)
 
-    def rotate(self, over: RotationPoint = RotationPoint.CENTER, angle: int = 0):
-        """
-        rotate image by angle over rotation point
-        """
-        point = self._get_rotation_point(over)
+    def rotate(self, point: RotationPoint = RotationPoint.CENTER, angle: int = 0) -> 'ImgEditor':
+        point = self._get_rotation_point(point)
         rot_matrix = cv2.getRotationMatrix2D(point, angle, 1)
         self._img = cv2.warpAffine(self._img, rot_matrix, self._shape)
+        return self
 
-    def shrink(self, x_factor: float = 1.0, y_factor: float = 1.0):
+    def translate(self, x_offset: int = 0, y_offset: int = 0) -> 'ImgEditor':
+        translation_matrix = np.float32([[1, 0, x_offset], [0, 1, -y_offset]])
+        self._img = cv2.warpAffine(self._img, translation_matrix, self._shape)
+        return self
+
+    def shrink(self, x_factor: float = 1.0, y_factor: float = 1.0) -> 'ImgEditor':
         self._img = cv2.resize(self._img, None,
                                fx=x_factor, fy=y_factor,
                                interpolation=cv2.INTER_CUBIC)
+        return self
 
-    def apply_and_save(self, result_path: str):
+    def mirror(self, over_x: bool = False, over_y: bool = False) -> 'ImgEditor':
+        if over_y:
+            self._img = cv2.flip(self._img, 1)
+        if over_x:
+            self._img = cv2.flip(self._img, 0)
+        return self
+
+    def save(self, result_path: str):
         """
         apply changes and save at path relative to current directory
         """
@@ -57,12 +72,11 @@ class ImgEditor:
             raise ValueError("unexpected rotation point!")
 
 
-def main():
-    img = ImgEditor(SOURCE_IMG_PATH)
-    img.rotate(RotationPoint.CENTER, 10)
-    img.shrink(x_factor=0.7, y_factor=0.7)
-    img.apply_and_save(RESULT_IMG_PATH)
-
-
 if __name__ == '__main__':
-    main()
+    ImgEditor(SOURCE_IMG_PATH) \
+        .rotate(RotationPoint.CENTER, angle=10) \
+        .rotate(RotationPoint.CENTER, angle=15) \
+        .shrink(x_factor=0.9) \
+        .translate(y_offset=20) \
+        .mirror(over_y=True) \
+        .save(RESULT_IMG_PATH)
