@@ -3,7 +3,7 @@
 ## Image editor. lab 1
 #### Usage
 
-- set up venv
+- set up & activate venv
 ```bash
 source venv/bin/activate
 
@@ -23,5 +23,6 @@ ImgEditor('source.png') \
 #### Example
 
 ```bash
+cd image-edit
 python editor.py
 ```
