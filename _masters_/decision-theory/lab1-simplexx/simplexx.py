@@ -1,105 +1,81 @@
 import numpy as np
 
-AXIS_OY = 1
 
+class Simplexx:
+    def __init__(self, a: np.ndarray, b: np.ndarray, lambdas: np.ndarray, signs: np.ndarray):
+        self.matr = a
+        self.b = b
+        self.lambdas = lambdas
+        self.signs = signs.reshape(signs.shape[0], 1)
+        self.tbl = None
+        self.header_top = []
+        self.header_left = []
 
-LAMBDAS = [2, 8, 3]
+    def create_simplex_table(self):
+        row_num = self.matr.shape[0]
+        col_num = self.matr.shape[1]
 
-def add_fictional_vars(a: np.matrix, signs: np.matrix, m_rows: int) -> np.matrix:
-    column_width = 1
-    for i in range(m_rows):
-        if signs[i, 0] == '>=':
-            fict_var_column = np.zeros((m_rows, column_width), dtype=int)
-            fict_var_column[i][0] = -1
-            a = np.c_[a, fict_var_column]
+        self.header_top = ['b']
+        i = 1
+        while i <= col_num:
+            self.header_top.append(f'x_{i}')
+            i += 1
 
-        elif signs[i, 0] == '<=':
-            fict_var_column = np.zeros((m_rows, column_width), dtype=int)
-            fict_var_column[i][0] = 1
-            a = np.c_[a, fict_var_column]
+        self.header_left = []
+        j = 0
+        while j < row_num:
+            # продолжаем счет переменных
+            self.header_left.append(f'x_{i + j}')
+            j += 1
 
-        else:
-            # equation? => do nothing
-            pass
-    return a
+        tbl = self.matr
 
+        b = self._to_column(self.b)
+        tbl = np.hstack((b, tbl))
 
-def step_1_solve():
-    pass
+        pos = 0
+        additional_zero_elem = 0
+        lambdas = np.insert(self.lambdas, pos, additional_zero_elem, axis=0)
+        tbl = np.vstack((tbl, lambdas))
+        self.tbl = tbl
 
+    def run(self):
+        self.create_simplex_table()
+        print('asda')
 
-def step_2_opt(matr: np.matrix, b: np.matrix):
-    # supporting =
-    pass
+    def _to_column(self, xs: np.ndarray) -> np.ndarray:
+        return xs.reshape(xs.shape[0], 1)
 
-
-def create_simplex_table(matr: np.matrix, b: np.matrix):
-    rows = matr.shape[0]
-    cols = matr.shape[1]
-
-    header_row = [' ', 's']
-    i = 1
-    while i <= cols:
-        header_row.append(f'x_{i}')
-        i += 1
-
-    header_col = []
-    j = 0
-    while j < rows:
-        # продолжаем счет переменных
-        header_col.append(f'x_{i + j}')
-        j += 1
-    header_col = np.array(header_col)
-    header_col = header_col.reshape(header_col.shape[0], 1)
-
-    tbl = np.zeros((rows, cols))
-    tbl = np.hstack((b, tbl))
-    tbl = np.hstack((header_col, tbl))
-    tbl = np.vstack((header_row, tbl))
-
-    tbl = np.squeeze(np.asarray(tbl))
-    print(tbl)
-
-
-def simlex(matr: np.matrix, b: np.matrix):
-    table = create_simplex_table(matr, b)
-
-    matr = matr.astype(np.float).tolist()
-    b = b.transpose().astype(np.float).tolist()[0]
-    all_free_vars_are_positive = True
-    for b_i in b:
-        if b_i < 0:
-            all_free_vars_are_positive = False
-            break
-
-    if all_free_vars_are_positive:
-        result = step_2_opt(matr, b)
-    else:
-        step_1_solve()
-        result = step_2_opt()
-
-    return result
+    # def run(matr: np.matrix, b: np.matrix):
+    #     table = create_simplex_table(matr, b)
+    #
+    #     matr = matr.astype(np.float).tolist()
+    #     b = b.transpose().astype(np.float).tolist()[0]
+    #     all_free_vars_are_positive = True
+    #     for b_i in b:
+    #         if b_i < 0:
+    #             all_free_vars_are_positive = False
+    #             break
+    #
+    #     if all_free_vars_are_positive:
+    #         result = step_2_opt(matr, b)
+    #     else:
+    #         step_1_solve()
+    #         result = step_2_opt()
+    #
+    #     return result
 
 
 def main():
-    matr = np.matrix([[2, 1, 1, '<=', 4],
-                      [1, 2, 0, '<=', 6],
-                      [0, 0.5, 1, '<=', 2]])
+    a = np.array([[2, 1, 1],
+                  [1, 2, 0],
+                  [0, 0.5, 1]])
+    b = np.array([4, 6, 2])
+    lambdas = np.array([2, 8, 3])
+    signs = np.array(['<=', '<=', '<='])
 
-    b = matr[:, -1]
-    signs = matr[:, -2]
-    a = matr[:, :-2]
-    m_rows = a.shape[0]
-    n_cols = a.shape[1]
-
-    print('--- Before ---')
-    print(matr)
-
-    print('--- fictional vars added ---')
-    # fictionals = add_fictional_vars(a, signs, m_rows)
-    # print(fictionals, b)
-
-    result = simlex(a, b)
+    s = Simplexx(a, b, lambdas, signs)
+    result = s.run()
     print(result)
 
 
