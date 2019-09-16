@@ -11,7 +11,7 @@ class Simplexx:
         self.header_top = []
         self.header_left = []
 
-    def create_simplex_table(self):
+    def create_simplex_table(self) -> np.ndarray:
         row_num = self.matr.shape[0]
         col_num = self.matr.shape[1]
 
@@ -30,40 +30,42 @@ class Simplexx:
 
         tbl = self.matr
 
+        # добавляем колонку b'шек слева
         b = self._to_column(self.b)
         tbl = np.hstack((b, tbl))
 
+        # добавляем строку лямбд внизу
         pos = 0
         additional_zero_elem = 0
         lambdas = np.insert(self.lambdas, pos, additional_zero_elem, axis=0)
         tbl = np.vstack((tbl, lambdas))
-        self.tbl = tbl
+        return tbl
 
-    def run(self):
-        self.create_simplex_table()
-        print('asda')
+    def free_members_are_positive(self) -> bool:
+        return True
+
+    def run(self) -> dict:
+        self.tbl = self.create_simplex_table()
+
+        if self.free_members_are_positive():
+            pivot = self.get_result_mapping()
+            return pivot
+
+    def get_result_mapping(self) -> dict:
+        res = dict()
+        for x_i in self.header_top:
+            if 'b' == x_i:
+                continue
+            else:
+                res[x_i] = 0
+        j = 0
+        for x_j in self.header_left:
+            res[x_j] = self.tbl[j, 0]
+            j += 1
+        return res
 
     def _to_column(self, xs: np.ndarray) -> np.ndarray:
         return xs.reshape(xs.shape[0], 1)
-
-    # def run(matr: np.matrix, b: np.matrix):
-    #     table = create_simplex_table(matr, b)
-    #
-    #     matr = matr.astype(np.float).tolist()
-    #     b = b.transpose().astype(np.float).tolist()[0]
-    #     all_free_vars_are_positive = True
-    #     for b_i in b:
-    #         if b_i < 0:
-    #             all_free_vars_are_positive = False
-    #             break
-    #
-    #     if all_free_vars_are_positive:
-    #         result = step_2_opt(matr, b)
-    #     else:
-    #         step_1_solve()
-    #         result = step_2_opt()
-    #
-    #     return result
 
 
 def main():
