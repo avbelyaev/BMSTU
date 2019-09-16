@@ -16,8 +16,8 @@ class Simplexx:
         col_num = self.matr.shape[1]
 
         self.header_top = ['b']
-        i = 1
-        while i <= col_num:
+        i = 0
+        while i < col_num:
             self.header_top.append(f'x_{i}')
             i += 1
 
@@ -31,8 +31,7 @@ class Simplexx:
         tbl = self.matr
 
         # добавляем колонку b'шек слева
-        b = self._to_column(self.b)
-        tbl = np.hstack((b, tbl))
+        tbl = np.hstack((self.b, tbl))
 
         # добавляем строку лямбд внизу
         pos = 0
@@ -41,17 +40,18 @@ class Simplexx:
         tbl = np.vstack((tbl, lambdas))
         return tbl
 
-    def free_members_are_positive(self) -> bool:
+    def is_acceptable_solution(self) -> bool:
+        # в столбце свободных членов все эл-ты положительные
         return True
 
     def run(self) -> (dict, float):
         self.tbl = self.create_simplex_table()
 
-        if self.free_members_are_positive():
+        if self.is_acceptable_solution():
             # опорное решение найдено
-            vars = self.get_variables_mapping()
+            variables = self.get_variables_mapping()
             value = self.target_func()
-            return (vars, value)
+            return variables, value
 
     def target_func(self) -> float:
         # так как все свобоные переменные = 0,
@@ -80,13 +80,17 @@ def main():
     a = np.array([[2, 1, 1],
                   [1, 2, 0],
                   [0, 0.5, 1]])
-    b = np.array([4, 6, 2])
+    b = np.array([[4],
+                  [6],
+                  [2]])
+    signs = np.array([['<='],
+                      ['<='],
+                      ['<=']])
     lambdas = np.array([2, 8, 3])
-    signs = np.array(['<=', '<=', '<='])
 
     s = Simplexx(a, b, lambdas, signs)
-    vars, value = s.run()
-    print(vars)
+    variables, value = s.run()
+    print(variables)
     print(f'F = {value}')
 
 
