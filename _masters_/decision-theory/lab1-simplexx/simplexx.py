@@ -18,7 +18,7 @@ class Simplexx:
         row_num = self.matr.shape[0]
         col_num = self.matr.shape[1]
 
-        self.header_top = []
+        self.header_top = ['b']
         i = 0
         while i < col_num:
             self.header_top.append(f'x_{i}')
@@ -80,8 +80,49 @@ class Simplexx:
         # разрешающая строка
         return determining_row
 
-    def change_basis(self, row: int, col: int):
-        pass
+    def change_basis(self, r: int, k: int):
+        # r - разр. строка
+        # k - разр. столбец
+        s_rk = self.tbl[r, k]
+        self.tbl[r, k] = 1 / s_rk
+
+        # меняем разрешающую строку, кроме разрешающего элемента
+        j = 0
+        while j < self._get_cols():
+            if j == k:
+                j += 1
+                continue
+            else:
+                self.tbl[r, j] = self.tbl[r, j] / s_rk
+            j += 1
+
+        # обновляем разрешающий столбец
+        i = 0
+        while i < self._get_rows():
+            if i == r:
+                i += 1
+                continue
+            else:
+                self.tbl[i, k] = -1 * self.tbl[i, k] / s_rk
+            i += 1
+
+        # обновляем все остальное
+        i, j = 0, 0
+        while i < self._get_rows():
+            while j < self._get_cols():
+                if i == r or j == k:
+                    j += 1
+                    continue
+                else:
+                    self.tbl[i, j] = self.tbl[i, j] - (self.tbl[i, k] * self.tbl[r, j] / self.tbl[i, j])
+                j += 1
+            i += 1
+
+        # меняем иксы в колонке и столбце
+        tmp = self.header_top[k]
+        self.header_top[k] = self.header_left[r]
+        self.header_left[r] = tmp
+
 
     def run(self) -> (dict, float):
         self.tbl = self.create_simplex_table()
@@ -94,23 +135,25 @@ class Simplexx:
 
             iters = 0
             while True:
+                iters += 1
                 print(f'iters: {iters}')
 
                 determining_col = self.find_determining_column()
                 print(f'determining col: {determining_col}')
                 if determining_col is None:
-                    print('determining col is None')
                     break
 
                 determining_row = self.find_determining_row(determining_col)
-                print(f'determining col: {determining_col}')
+                print(f'determining row: {determining_col}')
 
                 if determining_row is None:
-                    print('determining row is None')
                     break
 
                 self.change_basis(determining_row, determining_col)
 
+                variables = self.get_variables_mapping()
+                value = self.target_func()
+                self.iterations.append((iters, variables, value))
 
         return self.iterations
 
@@ -159,9 +202,9 @@ def main():
     lambdas = np.array([2, 8, 3])   # TODO ищем минимум, хотя в задании указан максимум
 
     s = Simplexx(a, b, lambdas, signs)
-    variables, value = s.run()
-    print(variables)
-    print(f'F = {value}')
+    iterations = s.run()
+    for iter in iterations:
+        print(iter)
 
 
 if __name__ == '__main__':
