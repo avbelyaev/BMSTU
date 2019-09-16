@@ -44,14 +44,22 @@ class Simplexx:
     def free_members_are_positive(self) -> bool:
         return True
 
-    def run(self) -> dict:
+    def run(self) -> (dict, float):
         self.tbl = self.create_simplex_table()
 
         if self.free_members_are_positive():
-            pivot = self.get_result_mapping()
-            return pivot
+            # опорное решение найдено
+            vars = self.get_variables_mapping()
+            value = self.target_func()
+            return (vars, value)
 
-    def get_result_mapping(self) -> dict:
+    def target_func(self) -> float:
+        # так как все свобоные переменные = 0,
+        # то ответ лежит в первой клетке подвала таблицы
+        rows = self.tbl.shape[0]
+        return self.tbl[rows - 1, 0]
+
+    def get_variables_mapping(self) -> dict:
         res = dict()
         for x_i in self.header_top:
             if 'b' == x_i:
@@ -77,8 +85,9 @@ def main():
     signs = np.array(['<=', '<=', '<='])
 
     s = Simplexx(a, b, lambdas, signs)
-    result = s.run()
-    print(result)
+    vars, value = s.run()
+    print(vars)
+    print(f'F = {value}')
 
 
 if __name__ == '__main__':
