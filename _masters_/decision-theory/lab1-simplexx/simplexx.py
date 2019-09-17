@@ -43,9 +43,15 @@ class Simplexx:
         tbl = np.vstack((tbl, lambdas))
         return tbl
 
-    def is_acceptable_solution(self) -> bool:
-        # в столбце свободных членов все эл-ты положительные
-        return True
+    # проверим, что в столбце свободных членов все эл-ты положительные
+    # иначе вернем строку с отрицательным элементом
+    def find_negative_free_var(self) -> Optional[int]:
+        i = 0
+        while i < self._get_rows():
+            if self._at(i, 0) < 0:
+                return i
+
+        return None
 
     # поиск резрешающего столбца
     def find_determining_column(self) -> Optional[int]:
@@ -127,7 +133,8 @@ class Simplexx:
     def run(self) -> (dict, float):
         self.tbl = self.create_simplex_table()
 
-        if self.is_acceptable_solution():
+        negative_free_var = self.find_negative_free_var()
+        if negative_free_var is None:
             # Так как все элементы столбца si0 неотрицательны, имеем опорное решение
             variables = self.get_variables_mapping()
             value = self.target_func()
@@ -154,6 +161,10 @@ class Simplexx:
                 variables = self.get_variables_mapping()
                 value = self.target_func()
                 self.iterations.append((iters, variables, value))
+
+        else:
+            # TODO do stuff
+            pass
 
         return self.iterations
 
