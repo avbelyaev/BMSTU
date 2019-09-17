@@ -183,23 +183,23 @@ class Simplexx:
         return self.tbl.shape[0]
 
     def _get_cols(self) -> int:
-        return self.tbl.shape[0]
+        return self.tbl.shape[1]
 
     def _to_column(self, xs: np.ndarray) -> np.ndarray:
         return xs.reshape(xs.shape[0], 1)
 
 
 def main():
-    a = np.array([[2, 1, 1],
-                  [1, 2, 0],
-                  [0, 0.5, 1]])
-    b = np.array([[4],
-                  [6],
-                  [2]])
-    signs = np.array([['<='],
-                      ['<='],
-                      ['<=']])
-    lambdas = np.array([2, 8, 3])   # TODO ищем минимум, хотя в задании указан максимум
+    a = np.array([[1, -2],
+                  [-2, 1],
+                  [1, 1]])
+    b = np.array([[2],
+                  [-2],
+                  [5]])
+    signs = np.array([['='],
+                      ['='],
+                      ['=']])
+    lambdas = np.array([-1, 1])   # TODO ищем минимум, хотя в задании указан максимум
 
     s = Simplexx(a, b, lambdas, signs)
     iterations = s.run()
