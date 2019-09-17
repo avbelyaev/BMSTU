@@ -8,7 +8,7 @@ class Simplexx:
         self.matr = a
         self.b = b
         self.lambdas = lambdas
-        self.signs = signs.reshape(signs.shape[0], 1)
+        self.signs = signs
         self.tbl = None
         self.header_top = []
         self.header_left = []
@@ -46,11 +46,11 @@ class Simplexx:
     # проверим, что в столбце свободных членов все эл-ты положительные
     # иначе вернем строку с отрицательным элементом
     def find_negative_free_var(self) -> Optional[int]:
-        i = 0
-        while i < self._get_rows():
-            if self._at(i, 0) < 0:
-                return i
-            i += 1
+        # i = 0
+        # while i < self._get_rows():
+        #     if self._at(i, 0) < 0:
+        #         return i
+        #     i += 1
 
         return None
 
