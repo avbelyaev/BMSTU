@@ -50,6 +50,7 @@ class Simplexx:
         while i < self._get_rows():
             if self._at(i, 0) < 0:
                 return i
+            i += 1
 
         return None
 
