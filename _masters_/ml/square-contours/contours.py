@@ -5,6 +5,25 @@ SOURCE_IMG_PATH = 'squares.jpg'
 RESULT_IMG_PATH = 'res.png'
 
 
+class Figure:
+    def __init__(self, contour):
+        self.contour = contour
+        self.peri = cv2.arcLength(contour, closed=True)
+        self.area = cv2.contourArea(contour)
+        self.approx = cv2.approxPolyDP(contour, epsilon=0.001 * self.peri, closed=True)
+
+
+def draw_squares(image, figures: 'List[Figure]'):
+    squares = list(map(lambda fig: fig.contour, figures))
+
+    draw_all_contours = -1
+    color_bgr = (0, 0, 255)
+    thickness = 1
+    cv2.drawContours(image, squares, draw_all_contours, color_bgr, thickness)
+
+    cv2.imwrite(f'./{RESULT_IMG_PATH}', image)
+
+
 def main():
     img = cv2.imread(SOURCE_IMG_PATH)
     original = img.copy()
@@ -28,27 +47,11 @@ def main():
     # img = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
 
     contours, hierarchy = cv2.findContours(edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    contours = sorted(contours, key=lambda cnt: cv2.arcLength(cnt, closed=True), reverse=True)
 
-    squares = []
-    for contour in contours:
-        perimeter = cv2.arcLength(contour, closed=True)
-        area = cv2.contourArea(contour)
-        print(f'perimeter: {perimeter}, area: {area}')
+    figures = list(map(lambda ctr: Figure(ctr), contours))
+    figures.sort(key=lambda fig: fig.area, reverse=True)
 
-        approximated_controur = cv2.approxPolyDP(contour, epsilon=0.001*perimeter, closed=True)
-
-        if len(approximated_controur) >= 4 and perimeter < 500:
-            squares.append(approximated_controur)
-
-    print(len(squares))
-
-    drawAllContours = -1
-    colorBGR = (0, 0, 255)
-    thickness = 1
-    cv2.drawContours(original, squares, drawAllContours, colorBGR, thickness)
-
-    cv2.imwrite(f'./{RESULT_IMG_PATH}', original)
+    draw_squares(original, figures)
 
 
 if __name__ == '__main__':
