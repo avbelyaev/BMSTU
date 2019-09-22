@@ -4,12 +4,21 @@ import numpy as np
 from copy import deepcopy
 
 
+class NoAllowedSolutionExists(Exception):
+    def __init__(self):
+        super().__init__('Допустимого(опорного) решения не существует')
+
+
+class NoOptimalSolutionExists(Exception):
+    def __init__(self):
+        super().__init__('Фукнция не ограничена! Оптимального решения не существует')
+
+
 class Simplexx:
-    def __init__(self, a: np.ndarray, b: np.ndarray, lambdas: np.ndarray, signs: np.ndarray):
+    def __init__(self, a: np.ndarray, b: np.ndarray, lambdas: np.ndarray):
         self.matr = a
         self.b = b
         self.lambdas = lambdas
-        self.signs = signs
         self.tbl = None
         self.header_top = []
         self.header_left = []
@@ -53,7 +62,6 @@ class Simplexx:
             if self.tbl[i, 0] < 0:
                 return i
             i += 1
-
         return None
 
     # В строке ищем первый отрицательный элемент
@@ -63,6 +71,7 @@ class Simplexx:
         while i < self._get_cols():
             if self.tbl[row, i] < 0:
                 return i
+            i += 1
         return None
 
     # поиск резрешающего столбца
@@ -99,7 +108,7 @@ class Simplexx:
         return determining_row
 
     def change_basis(self, r: int, k: int):
-        print(f'Changing basis: {self.header_left[r]} <-> {self.header_top[k]}, row: {r}, col: {k}')
+        print(f'Замена базиса: {self.header_left[r]} <-> {self.header_top[k]}, row: {r}, col: {k}')
         # r - разр. строка
         # k - разр. столбец
         s_rk = self.tbl[r, k]
@@ -108,38 +117,38 @@ class Simplexx:
         original_table = deepcopy(self.tbl)
 
         # меняем разрешающую строку, кроме разрешающего элемента
-        j = 0
-        while j < self._get_cols():
-            if j == k:
-                j += 1
+        col = 0
+        while col < self._get_cols():
+            if col == k:
+                col += 1
                 continue
             else:
-                self.tbl[r, j] = original_table[r, j] / s_rk
-            j += 1
+                self.tbl[r, col] = original_table[r, col] / s_rk
+            col += 1
 
         # обновляем разрешающий столбец
-        i = 0
-        while i < self._get_rows():
-            if i == r:
-                i += 1
+        row = 0
+        while row < self._get_rows():
+            if row == r:
+                row += 1
                 continue
             else:
-                self.tbl[i, k] = -1 * original_table[i, k] / s_rk
-            i += 1
+                self.tbl[row, k] = -1 * original_table[row, k] / s_rk
+            row += 1
 
         # обновляем все остальное
-        i = 0
-        while i < self._get_rows():
-            j = 0
-            while j < self._get_cols():
-                if i == r or j == k:
-                    j += 1
+        row = 0
+        while row < self._get_rows():
+            col = 0
+            while col < self._get_cols():
+                if row == r or col == k:
+                    col += 1
                     continue
                 else:
-                    t = original_table[i, k] * original_table[r, j] / s_rk
-                    self.tbl[i, j] = original_table[i, j] - t
-                j += 1
-            i += 1
+                    t = original_table[row, k] * original_table[r, col] / s_rk
+                    self.tbl[row, col] = original_table[row, col] - t
+                col += 1
+            row += 1
 
         # меняем иксы в колонке и столбце
         tmp = self.header_top[k]
@@ -149,6 +158,7 @@ class Simplexx:
     def run(self) -> (dict, float):
         self.tbl = self.create_simplex_table()
 
+        print('Поиск опорного решения')
         while True:
             negative_free_var_row = self.find_negative_free_var_row()
             if negative_free_var_row is None:
@@ -156,12 +166,11 @@ class Simplexx:
 
             determining_col = self.find_first_negative_col(negative_free_var_row)
             if determining_col is None:
-                break
+                raise NoAllowedSolutionExists()
 
             # Найдем минимальное положительное отношение элмента свободных членов si0
             # к соответствующем эле- менту в разрешающем столбце
             determining_row = self.find_determining_row(determining_col)
-            print(f'determining row: {determining_col}')
             if determining_row is None:
                 break
 
@@ -169,21 +178,19 @@ class Simplexx:
 
         # Так как все элементы столбца si0 неотрицательны, имеем опорное решение
         self.add_solution()
+        print(self.solutions[-1])
 
+        print('Поиск оптимального решения')
         while True:
             determining_col = self.find_determining_column()
-            print(f'determining col: {determining_col}')
             if determining_col is None:
                 break
 
             determining_row = self.find_determining_row(determining_col)
-            print(f'determining row: {determining_col}')
-
             if determining_row is None:
-                break
+                raise NoOptimalSolutionExists()
 
             self.change_basis(determining_row, determining_col)
-
             self.add_solution()
 
         return self.solutions
@@ -212,9 +219,6 @@ class Simplexx:
             j += 1
         return res
 
-    def _at(self, row, col) -> float:
-        return self.tbl[row, col]
-
     def _get_rows(self) -> int:
         return self.tbl.shape[0]
 
@@ -226,18 +230,15 @@ class Simplexx:
 
 
 def main():
-    a = np.array([[1, -2],
-                  [-2, 1],
-                  [1, 1]])
-    b = np.array([[2],
-                  [-2],
-                  [5]])
-    signs = np.array([['='],
-                      ['='],
-                      ['=']])
-    lambdas = np.array([1, -1])   # TODO ищем минимум, хотя в задании указан максимум
+    a = np.array([[2, 1, 1],
+                  [1, 2, 0],
+                  [0, 0.5, 1]])
+    b = np.array([[4],
+                  [6],
+                  [2]])
+    lambdas = np.array([2, 8, 3])   # TODO ищем минимум, хотя в задании указан максимум
 
-    s = Simplexx(a, b, lambdas, signs)
+    s = Simplexx(a, b, lambdas)
     solutions = s.run()
 
     [print(s) for s in solutions]
