@@ -8,6 +8,27 @@ from _masters_.decision_theory.lab1_simplexx.simplexx import Simplexx
 
 
 class TestSimplexxMethods(unittest.TestCase):
+    def test_simplex(self):
+        # given
+        a = np.array([[1, -2],
+                      [-2, 1],
+                      [1, 1]])
+        b = np.array([[2],
+                      [-2],
+                      [5]])
+        signs = np.array([['='],
+                          ['='],
+                          ['=']])
+        lambdas = np.array([1, -1])  # TODO ищем минимум, хотя в задании указан максимум
+
+        # when
+        s = Simplexx(a, b, lambdas, signs)
+        solutions = s.run()
+
+        # then
+        expected_best_solution = ({'x_3': 0, 'x_5': 0, 'x_4': 5.0, 'x_1': 4.0, 'x_2': 1.0}, {'F': -3.0})
+        self.assertEqual(expected_best_solution, solutions[-1])
+
     def test_change_basis_1(self):
         # given
         simplex = Simplexx(None, None, None, None)

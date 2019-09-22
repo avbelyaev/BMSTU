@@ -238,9 +238,9 @@ def main():
     lambdas = np.array([1, -1])   # TODO ищем минимум, хотя в задании указан максимум
 
     s = Simplexx(a, b, lambdas, signs)
-    iterations = s.run()
-    for iter in iterations:
-        print(iter)
+    solutions = s.run()
+
+    [print(s) for s in solutions]
 
 
 if __name__ == '__main__':
