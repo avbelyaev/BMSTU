@@ -13,15 +13,15 @@ class Simplexx:
         self.tbl = None
         self.header_top = []
         self.header_left = []
-        self.iterations = []
+        self.solutions = []
 
     def create_simplex_table(self) -> np.ndarray:
         row_num = self.matr.shape[0]
         col_num = self.matr.shape[1]
 
         self.header_top = ['b']
-        i = 0
-        while i < col_num:
+        i = 1
+        while i <= col_num:
             self.header_top.append(f'x_{i}')
             i += 1
 
@@ -49,7 +49,7 @@ class Simplexx:
     # иначе вернем строку с отрицательным элементом
     def find_negative_free_var_row(self) -> Optional[int]:
         i = 0
-        while i < self._get_rows():
+        while i < self._get_rows() - 1:  # пропускаем подвал таблицы
             if self.tbl[i, 0] < 0:
                 return i
             i += 1
@@ -90,8 +90,8 @@ class Simplexx:
                 i += 1
                 continue
 
-            curr_relation = self._at(i, 0) / self._at(i, determining_col)
-            if curr_relation < min_relation:
+            curr_relation = self.tbl[i, 0] / self.tbl[i, determining_col]
+            if 0 < curr_relation < min_relation:
                 min_relation = curr_relation
                 determining_row = i
             i += 1
@@ -99,6 +99,7 @@ class Simplexx:
         return determining_row
 
     def change_basis(self, r: int, k: int):
+        print(f'Changing basis: {self.header_left[r]} <-> {self.header_top[k]}, row: {r}, col: {k}')
         # r - разр. строка
         # k - разр. столбец
         s_rk = self.tbl[r, k]
@@ -145,7 +146,6 @@ class Simplexx:
         self.header_top[k] = self.header_left[r]
         self.header_left[r] = tmp
 
-
     def run(self) -> (dict, float):
         self.tbl = self.create_simplex_table()
 
@@ -167,17 +167,10 @@ class Simplexx:
 
             self.change_basis(determining_row, determining_col)
 
-
         # Так как все элементы столбца si0 неотрицательны, имеем опорное решение
-        variables = self.get_variables_mapping()
-        value = self.target_func()
-        self.iterations.append((0, variables, value))
+        self.add_solution()
 
-        iters = 0
         while True:
-            iters += 1
-            print(f'iters: {iters}')
-
             determining_col = self.find_determining_column()
             print(f'determining col: {determining_col}')
             if determining_col is None:
@@ -191,11 +184,14 @@ class Simplexx:
 
             self.change_basis(determining_row, determining_col)
 
-            variables = self.get_variables_mapping()
-            value = self.target_func()
-            self.iterations.append((iters, variables, value))
+            self.add_solution()
 
-        return self.iterations
+        return self.solutions
+
+    def add_solution(self):
+        variables = self.get_variables_mapping()
+        value = self.target_func()
+        self.solutions.append((variables, {'F': value}))
 
     def target_func(self) -> float:
         # так как все свобоные переменные = 0,
@@ -239,7 +235,7 @@ def main():
     signs = np.array([['='],
                       ['='],
                       ['=']])
-    lambdas = np.array([-1, 1])   # TODO ищем минимум, хотя в задании указан максимум
+    lambdas = np.array([1, -1])   # TODO ищем минимум, хотя в задании указан максимум
 
     s = Simplexx(a, b, lambdas, signs)
     iterations = s.run()
