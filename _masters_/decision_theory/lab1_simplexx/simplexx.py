@@ -1,6 +1,7 @@
 from typing import Optional
 
 import numpy as np
+from copy import deepcopy
 
 
 class Simplexx:
@@ -41,17 +42,27 @@ class Simplexx:
         additional_zero_elem = 0
         lambdas = np.insert(self.lambdas, pos, additional_zero_elem, axis=0)
         tbl = np.vstack((tbl, lambdas))
+        tbl = tbl.astype(dtype='float64')
         return tbl
 
     # проверим, что в столбце свободных членов все эл-ты положительные
     # иначе вернем строку с отрицательным элементом
-    def find_negative_free_var(self) -> Optional[int]:
-        # i = 0
-        # while i < self._get_rows():
-        #     if self._at(i, 0) < 0:
-        #         return i
-        #     i += 1
+    def find_negative_free_var_row(self) -> Optional[int]:
+        i = 0
+        while i < self._get_rows():
+            if self.tbl[i, 0] < 0:
+                return i
+            i += 1
 
+        return None
+
+    # В строке ищем первый отрицательный элемент
+    def find_first_negative_col(self, row: int) ->Optional[int]:
+        #  пропускаем 0й столбец со свободными переменными
+        i = 1
+        while i < self._get_cols():
+            if self.tbl[row, i] < 0:
+                return i
         return None
 
     # поиск резрешающего столбца
@@ -75,7 +86,7 @@ class Simplexx:
         determining_row = None
         i = 0
         while i < self._get_rows() - 1:
-            if 0 == self._at(i, determining_col):
+            if 0 == self.tbl[i, determining_col]:
                 i += 1
                 continue
 
@@ -93,6 +104,8 @@ class Simplexx:
         s_rk = self.tbl[r, k]
         self.tbl[r, k] = 1 / s_rk
 
+        original_table = deepcopy(self.tbl)
+
         # меняем разрешающую строку, кроме разрешающего элемента
         j = 0
         while j < self._get_cols():
@@ -100,7 +113,7 @@ class Simplexx:
                 j += 1
                 continue
             else:
-                self.tbl[r, j] = self.tbl[r, j] / s_rk
+                self.tbl[r, j] = original_table[r, j] / s_rk
             j += 1
 
         # обновляем разрешающий столбец
@@ -110,18 +123,20 @@ class Simplexx:
                 i += 1
                 continue
             else:
-                self.tbl[i, k] = -1 * self.tbl[i, k] / s_rk
+                self.tbl[i, k] = -1 * original_table[i, k] / s_rk
             i += 1
 
         # обновляем все остальное
-        i, j = 0, 0
+        i = 0
         while i < self._get_rows():
+            j = 0
             while j < self._get_cols():
                 if i == r or j == k:
                     j += 1
                     continue
                 else:
-                    self.tbl[i, j] = self.tbl[i, j] - (self.tbl[i, k] * self.tbl[r, j] / self.tbl[i, j])
+                    t = original_table[i, k] * original_table[r, j] / s_rk
+                    self.tbl[i, j] = original_table[i, j] - t
                 j += 1
             i += 1
 
@@ -134,38 +149,51 @@ class Simplexx:
     def run(self) -> (dict, float):
         self.tbl = self.create_simplex_table()
 
-        negative_free_var = self.find_negative_free_var()
-        if negative_free_var is None:
-            # Так как все элементы столбца si0 неотрицательны, имеем опорное решение
+        while True:
+            negative_free_var_row = self.find_negative_free_var_row()
+            if negative_free_var_row is None:
+                break
+
+            determining_col = self.find_first_negative_col(negative_free_var_row)
+            if determining_col is None:
+                break
+
+            # Найдем минимальное положительное отношение элмента свободных членов si0
+            # к соответствующем эле- менту в разрешающем столбце
+            determining_row = self.find_determining_row(determining_col)
+            print(f'determining row: {determining_col}')
+            if determining_row is None:
+                break
+
+            self.change_basis(determining_row, determining_col)
+
+
+        # Так как все элементы столбца si0 неотрицательны, имеем опорное решение
+        variables = self.get_variables_mapping()
+        value = self.target_func()
+        self.iterations.append((0, variables, value))
+
+        iters = 0
+        while True:
+            iters += 1
+            print(f'iters: {iters}')
+
+            determining_col = self.find_determining_column()
+            print(f'determining col: {determining_col}')
+            if determining_col is None:
+                break
+
+            determining_row = self.find_determining_row(determining_col)
+            print(f'determining row: {determining_col}')
+
+            if determining_row is None:
+                break
+
+            self.change_basis(determining_row, determining_col)
+
             variables = self.get_variables_mapping()
             value = self.target_func()
-            self.iterations.append((0, variables, value))
-
-            iters = 0
-            while True:
-                iters += 1
-                print(f'iters: {iters}')
-
-                determining_col = self.find_determining_column()
-                print(f'determining col: {determining_col}')
-                if determining_col is None:
-                    break
-
-                determining_row = self.find_determining_row(determining_col)
-                print(f'determining row: {determining_col}')
-
-                if determining_row is None:
-                    break
-
-                self.change_basis(determining_row, determining_col)
-
-                variables = self.get_variables_mapping()
-                value = self.target_func()
-                self.iterations.append((iters, variables, value))
-
-        else:
-            # TODO do stuff
-            pass
+            self.iterations.append((iters, variables, value))
 
         return self.iterations
 
