@@ -143,6 +143,7 @@ class Figure:
 
 
 is_square = lambda points: len(points) == 4
+# многогранник
 is_polyhedron = lambda points: len(points) >= 4
 
 
@@ -171,8 +172,10 @@ def main():
 
         if f.is_polyhedron():
             if is_square(f.approx):
+                # четырехугольник
                 figures.append(f)
             else:
+                # многогранник => можно разбить
                 squares = f.split_into_squares()
                 figures.extend(squares)
 
