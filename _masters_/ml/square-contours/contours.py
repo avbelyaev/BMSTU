@@ -55,9 +55,9 @@ class SimpleSquare:
     def draw_on_current_canvas(self, img):
         line_thickness = 2
         for i in range(len(self.pts)):
-            curr_pt = self.pts[i]
-            next_pt = self.pts[(i + 1) % len(self.pts)]
-            cv2.line(img, (curr_pt.x, curr_pt.y), (next_pt.x, next_pt.y), self.color_bgr, line_thickness)
+            p1 = self.pts[i]
+            p2 = self.pts[(i + 1) % len(self.pts)]
+            cv2.line(img, (p1.x, p1.y), (p2.x, p2.y), self.color_bgr, line_thickness)
         return img
 
     @property
@@ -119,9 +119,9 @@ class Figure:
                 prev_angle = angles[i - 1]
                 prev_prev_angle = angles[i - 2]
                 if 175 < (curr_angle + prev_angle) < 185:
-                    if abs(prev_prev_angle - curr_angle) < 10:
+                    if abs(prev_prev_angle - curr_angle) < 11:
                         print('>>>> bingo')
-                        figure = SimpleSquare(points[i - 1], points[i], points[i + 1])
+                        figure = SimpleSquare(points[i - 1], points[i], points[(i + 1) % len(points)])
                         squares.append(figure)
         return squares
 
