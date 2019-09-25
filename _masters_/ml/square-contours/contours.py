@@ -46,6 +46,33 @@ class Vector:
         return f'{self.pt_from} -> {self.pt_to}'
 
 
+class SimpleSquare:
+    def __init__(self, p1: Point, p2: Point, p3: Point):
+        self.color_name = COLORS[random.randint(0, len(COLORS) - 1)]
+        p4 = self.predict_point(p1, p2, p3)
+        self.pts = [p1, p2, p3, p4]
+
+    def draw_on_current_canvas(self, img):
+        line_thickness = 2
+        for i in range(len(self.pts)):
+            curr_pt = self.pts[i]
+            next_pt = self.pts[(i + 1) % len(self.pts)]
+            cv2.line(img, (curr_pt.x, curr_pt.y), (next_pt.x, next_pt.y), self.color_bgr, line_thickness)
+        return img
+
+    @property
+    def color_bgr(self) -> tuple:
+        rgb = name_to_rgb(self.color_name)
+        return rgb[2], rgb[1], rgb[0]
+
+    def predict_point(self, p1: Point, p2: Point, p3: Point) -> Point:
+        delta_x = p3.x - p2.x
+        delta_y = p3.y - p2.y
+        new_x = p1.x + delta_x
+        new_y = p1.y + delta_y
+        return Point(new_x, new_y)
+
+
 class Figure:
     def __init__(self, contour):
         self.color_name = COLORS[random.randint(0, len(COLORS) - 1)]
@@ -65,6 +92,38 @@ class Figure:
         thickness = 2
         cv2.drawContours(img, [self.approx], draw_all_contours, self.color_bgr, thickness)
         return img
+
+    def split_into_squares(self) -> 'list[Figure]':
+        print(f'> splitting {self.color_name}')
+
+        # convert numpy points to normal points
+        points = []
+        for np_point in self.approx:
+            points.append(Point(np_point[0, 0], np_point[0, 1]))
+
+        squares = []
+        angles = []
+        for i in range(len(points)):
+            p1 = points[i]
+            p2 = points[(i + 1) % len(points)]
+            p3 = points[(i + 2) % len(points)]
+
+            v1 = Vector(p2, p1)
+            v2 = Vector(p2, p3)
+
+            curr_angle = directionwise_angle(v1, v2)
+            angles.append(curr_angle)
+
+            # try create square
+            if len(angles) > 4:
+                prev_angle = angles[i - 1]
+                prev_prev_angle = angles[i - 2]
+                if 175 < (curr_angle + prev_angle) < 185:
+                    if abs(prev_prev_angle - curr_angle) < 10:
+                        print('>>>> bingo')
+                        figure = SimpleSquare(points[i - 1], points[i], points[i + 1])
+                        squares.append(figure)
+        return squares
 
     @property
     def color_bgr(self) -> tuple:
@@ -88,27 +147,6 @@ def directionwise_angle(v1: Vector, v2: Vector) -> float:
     return r
 
 
-def draw_squares(img, figures: 'List[Figure]'):
-    for f in figures:
-        img = f.draw_on_current_canvas(img)
-    cv2.imwrite(f'./{RESULT_IMG_PATH}', img)
-
-
-def already_exists(new_figure: Figure, figures: list):
-    for fig in figures:
-        if abs(fig.area - new_figure.area) < 100:
-            return True
-    return False
-
-
-def print_figures(figures: list):
-    print('---')
-    [print(fig) for fig in figures]
-
-    # sharpenKernel = np.array([[-1, -1, -1], [-1, 10, -1], [-1, -1, -1]])
-    # img = cv2.filter2D(img, -1, sharpenKernel)
-
-
 def main():
     img = cv2.imread(SOURCE_IMG_PATH, cv2.IMREAD_GRAYSCALE)
     original = cv2.imread(SOURCE_IMG_PATH)
@@ -119,14 +157,18 @@ def main():
     figures = []
     for ctr in contours:
         f = Figure(ctr)
-        if f.is_polyhedron() and not already_exists(f, figures):
-            figures.append(f)
 
-    # sort by perimeter DESC to find biggest one
-    figures.sort(key=lambda fig: fig.area, reverse=True)
-    print_figures(figures)
+        if f.is_polyhedron():
+            if len(f.approx) == 4:
+                figures.append(f)
+            else:
+                squares = f.split_into_squares()
+                figures.extend(squares)
 
-    draw_squares(original, figures)
+    # draw
+    for f in figures:
+        original = f.draw_on_current_canvas(original)
+    cv2.imwrite(f'./{RESULT_IMG_PATH}', original)
 
 
 if __name__ == '__main__':
