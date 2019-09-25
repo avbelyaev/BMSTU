@@ -1,6 +1,7 @@
 import random
 
 import cv2
+import math
 from webcolors import name_to_rgb  # TODO replace with MPL colors
 
 SOURCE_IMG_PATH = 'squares.jpg'
@@ -9,6 +10,40 @@ RESULT_IMG_PATH = 'res.png'
 COLORS = ['white', 'green', 'purple', 'black', 'blue',
           'red', 'yellow', 'orange', 'brown', 'cyan',
           'Fuchsia', 'LawnGreen']
+
+
+class Point:
+    def __init__(self, x: int, y: int):
+        self.x = x
+        self.y = y
+
+    def __eq__(self, other):
+        return other is not None and \
+               self.x == other.x and self.y == other.y
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return f'[{self.x}:{self.y}]'
+
+
+class Vector:
+    def __init__(self, pt_from: Point, pt_to: Point):
+        self.pt_from = pt_from
+        self.pt_to = pt_to
+
+    # радиус-вектор представляется точкой
+    def to_radius_vector(self) -> Point:
+        delta_x = self.pt_to.x - self.pt_from.x
+        delta_y = self.pt_to.y - self.pt_from.y
+        return Point(delta_x, delta_y)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return f'{self.pt_from} -> {self.pt_to}'
 
 
 class Figure:
@@ -20,10 +55,16 @@ class Figure:
         self.peri = cv2.arcLength(contour, closed=True)
         self.approx = cv2.approxPolyDP(contour, epsilon=0.01 * self.peri, closed=True)
 
-    def reapprox(self, eps: float = 0.001):
-        self.approx = cv2.approxPolyDP(self.approx, epsilon=eps * self.peri, closed=True)
-        self.peri = cv2.arcLength(self.approx, closed=True)
-        self.area = cv2.contourArea(self.approx)
+    def is_polyhedron(self) -> bool:
+        is_not_empty = self.area > 20
+        return len(self.approx) >= 4 and is_not_empty
+
+    def draw_on_current_canvas(self, img):
+        print(f'drawing {self.color_name}')
+        draw_all_contours = -1
+        thickness = 2
+        cv2.drawContours(img, [self.approx], draw_all_contours, self.color_bgr, thickness)
+        return img
 
     @property
     def color_bgr(self) -> tuple:
@@ -36,17 +77,20 @@ class Figure:
                f'   points: {len(self.orginal_contour)} -> {len(self.approx)}'
 
 
-def random_color_name():
-    return 'green'
+def directionwise_angle(v1: Vector, v2: Vector) -> float:
+    p1, p2 = v1.to_radius_vector(), v2.to_radius_vector()
+
+    v1_theta = math.atan2(p1.y, p1.x)
+    v2_theta = math.atan2(p2.y, p2.x)
+    r = (v2_theta - v1_theta) * (180.0 / math.pi)
+    if r < 0:
+        r += 360.0
+    return r
 
 
 def draw_squares(img, figures: 'List[Figure]'):
-    for fig in figures:
-        print(f'drawing {fig.color_name}')
-        draw_all_contours = -1
-        thickness = 2
-        cv2.drawContours(img, [fig.approx], draw_all_contours, fig.color_bgr, thickness)
-
+    for f in figures:
+        img = f.draw_on_current_canvas(img)
     cv2.imwrite(f'./{RESULT_IMG_PATH}', img)
 
 
@@ -74,11 +118,9 @@ def main():
     contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     figures = []
     for ctr in contours:
-        fig = Figure(ctr)
-        if not already_exists(fig, figures) \
-                and len(fig.approx) >= 4 \
-                and fig.area > 20:
-            figures.append(fig)
+        f = Figure(ctr)
+        if f.is_polyhedron() and not already_exists(f, figures):
+            figures.append(f)
 
     # sort by perimeter DESC to find biggest one
     figures.sort(key=lambda fig: fig.area, reverse=True)
