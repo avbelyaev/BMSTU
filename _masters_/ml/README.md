@@ -33,7 +33,7 @@ ImgEditor('source.png') \
 #### Example
 
 ```bash
-cd image-edit
+cd image_edit
 python editor.py
 ```
 
@@ -46,6 +46,17 @@ python editor.py
 #### Usage
 
 ```bash
-cd square-contours
+cd square_contours
 python contours.py
 ```
+
+
+## Blur detector. lab 3
+
+Реализовать алгоритмы распознавания размытого изображения и региона
+
+- Tenengrad (TENG)
+- Normalized Gray Level Variance (GLVN)
+
+возвращаемое значение – метка изображение размыто или нет. 
+Для региона указать координаты размытого региона на изображении.
