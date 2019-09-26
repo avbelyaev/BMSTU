@@ -2,12 +2,13 @@ import cv2
 import numpy as np
 
 from _masters_.ml.square_contours.contours import Point
+# https://vk.com/doc1164151_516201556?hash=d3ac940079dcba822a&dl=37b24c9319a7ddb58b
 
 SOURCE_IMG_PATH = 'blurred.jpg'
 RESULT_IMG_PATH = 'res.png'
 
-WINDOW_HEIGHT = 100
-WINDOW_WIDTH = 100
+WINDOW_HEIGHT = 30
+WINDOW_WIDTH = 30
 
 FRAGMENT_HEIGHT = 80
 FRAGMENT_WIDTH = 100
@@ -17,21 +18,38 @@ class Fragment:
     def __init__(self, top_left: Point, bot_right: Point, img: np.ndarray):
         self.top_left = top_left
         self.bot_right = bot_right
-        self.matrix = img[top_left.x: bot_right.x, top_left.y: bot_right.y]
+        self.img = img[top_left.x: bot_right.x, top_left.y: bot_right.y]
 
-    def local_variance(self) -> float:
-        sum = 0
+    def local_variance_at(self, m: int, n: int) -> float:
+        summ = 0
         i = 0
         while i < WINDOW_WIDTH:
             j = 0
             while j < WINDOW_HEIGHT:
-                pass
+                w = Window(top_left=Point(i, j),
+                           bot_right=Point(i + WINDOW_WIDTH, j + WINDOW_HEIGHT),
+                           img=self.img)
+                I_mean = w.mean
+                I = self.img[m + i, n + j]
+                summ += (I - I_mean) ** 2
+                j += 1
+            i += 1
+        return summ / (WINDOW_HEIGHT * WINDOW_WIDTH)
 
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
         return f'{self.top_left}..{self.bot_right}\n'
+
+
+class Window(Fragment):
+    def __init__(self, top_left: Point, bot_right: Point, img: np.ndarray):
+        super().__init__(top_left, bot_right, img)
+
+    @property
+    def mean(self) -> float:
+        return self.img.mean()
 
 
 def crop(img) -> 'list[Fragment]':
@@ -59,13 +77,11 @@ def main():
     print(fragments)
 
     frag = fragments[3]
+    lv = frag.local_variance_at(0, 0)
+
     cv2.rectangle(original, (frag.top_left.x, frag.top_left.y),
                   (frag.bot_right.x, frag.bot_right.y), (0, 0, 255), thickness=2)
 
-    # size = imglen // WINDOW_SIZE
-    # deviations = [[0] * size for _ in range(size)]
-    #
-    # print(f'computing brightness and deviation for img[{imglen}:{imglen}]')
     cv2.imwrite(f'./{RESULT_IMG_PATH}', original)
 
 
