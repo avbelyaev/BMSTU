@@ -1,16 +1,26 @@
 # ML
 
-## Image editor. lab 1
-#### Usage
+Prerequirements
 
 - set up & activate venv
 ```bash
 source venv/bin/activate
-
 pip install -r requirements.txt
 ```
 
-- use `ImgEditor` class in builder-like way:
+## Image editor. lab 1
+
+Аугументация.
+
+Реализовать программу (python или C++), на вход которой подаётся изображения, а на выходе должно быть несколько изображений:
+
+- Повороты этого изображения на некоторый угол
+- Смещение этого изображения по оси x и по оси y
+- Сжатие и растяжение
+- Параллельный перенос
+- Симметрия
+
+#### Usage
 
 ```python
 ImgEditor('source.png') \
@@ -35,14 +45,6 @@ python editor.py
 
 #### Usage
 
-- set up & activate venv
-```bash
-source venv/bin/activate
-
-pip install -r requirements.txt
-```
-
-- run lab
 ```bash
 cd square-contours
 python contours.py
