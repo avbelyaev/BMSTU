@@ -6,7 +6,7 @@ from _masters_.ml.square_contours.contours import Point
 
 # https://vk.com/doc1164151_516201556?hash=d3ac940079dcba822a&dl=37b24c9319a7ddb58b
 
-SOURCE_IMG_PATH = 'blurred.png'
+SOURCE_IMG_PATH = 'original.png'
 RESULT_IMG_PATH = 'res.png'
 
 # размер окна, проходя которым по фрагменту, проверяем его заблюренность
