@@ -7,7 +7,6 @@ from _masters_.ml.square_contours.contours import Point
 # https://vk.com/doc1164151_516201556?hash=d3ac940079dcba822a&dl=37b24c9319a7ddb58b
 
 SOURCE_IMG_PATH = 'blurred.png'
-# SOURCE_IMG_PATH = 'blurred2.jpg'
 RESULT_IMG_PATH = 'res.png'
 
 # размер окна, проходя которым по фрагменту, проверяем его заблюренность
@@ -59,11 +58,11 @@ class Fragment:
         return np.sum(np.square(res))
 
     def draw(self, img: np.ndarray):
-        bgr_color = (0, 0, 255)
+        bgr_orange_color = (0, 128, 255)
         return cv2.rectangle(img,
                       pt1=(self.top_left.x, self.top_left.y),
                       pt2=(self.bot_right.x, self.bot_right.y),
-                      color=bgr_color, thickness=1)
+                      color=bgr_orange_color, thickness=1)
 
     def __repr__(self):
         return self.__str__()
@@ -98,20 +97,26 @@ def crop(img) -> 'list[Fragment]':
 
 
 def main():
+    # read imgs
+    original1 = cv2.imread(SOURCE_IMG_PATH)
+    original2 = original1.copy()
     img = cv2.imread(SOURCE_IMG_PATH, cv2.IMREAD_GRAYSCALE)
-    original = cv2.imread(SOURCE_IMG_PATH)
+
+    # crop into pieces
     fragments = crop(img)
 
-    # detect blur with tenengrad
-    tenengrads = list(map(lambda fragment: fragment.tenengrad(), fragments))
+    # detect blurred pieces with tenengrad
+    tenengrads = list(map(lambda f: f.tenengrad(), fragments))
     teng_thresh = max(tenengrads) * 0.48
 
     for fragment in fragments:
-        teng = fragment.tenengrad()
-        if teng > teng_thresh:
-            fragment.draw(original)
+        if fragment.tenengrad() > teng_thresh:
+            fragment.draw(original1)
 
-    cv2.imwrite(f'./{RESULT_IMG_PATH}', original)
+    cv2.imwrite(f'./teng-{RESULT_IMG_PATH}', original1)
+
+    # detect blur with GLVN
+
 
 
 if __name__ == '__main__':
