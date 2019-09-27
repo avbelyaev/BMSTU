@@ -1,6 +1,6 @@
 # ML
 
-Prerequirements
+Prerequisites
 
 - set up and activate venv
 ```bash
@@ -52,7 +52,7 @@ ImgEditor('source.png') \
 
 
 
-## Square detector. lab 2
+## Square detector. lab 2.1
 
 Для выбранных изображений (см почту) реализовать распознавание границ геометрических фигур. 
 Распознанные границы нанести на рисунок (другим цветом).
@@ -77,7 +77,7 @@ python contours.py
 
 
 
-## Blur detector. lab 3
+## Blur detector. lab 2.2
 
 Реализовать алгоритмы распознавания размытого изображения и региона
 
