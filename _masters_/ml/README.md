@@ -2,11 +2,15 @@
 
 Prerequirements
 
-- set up & activate venv
+- set up and activate venv
 ```bash
 source venv/bin/activate
 pip install -r requirements.txt
 ```
+
+
+
+
 
 ## Image editor. lab 1
 
@@ -22,6 +26,11 @@ pip install -r requirements.txt
 
 #### Usage
 
+```bash
+cd image_edit
+python editor.py
+```
+
 ```python
 ImgEditor('source.png') \
     .rotate(RotationPoint.CENTER, angle=10) \
@@ -30,12 +39,17 @@ ImgEditor('source.png') \
     .save('dest.png')
 ```
 
-#### Example
+#### Before
 
-```bash
-cd image_edit
-python editor.py
-```
+![o](image_edit/face.png)
+
+#### After
+
+![r](image_edit/res.png)
+
+
+
+
 
 
 ## Square detector. lab 2
@@ -49,6 +63,18 @@ python editor.py
 cd square_contours
 python contours.py
 ```
+
+#### Before
+
+![o](square_contours/squares.jpg)
+
+#### After
+
+![r](square_contours/res.png)
+
+
+
+
 
 
 ## Blur detector. lab 3
@@ -66,4 +92,11 @@ cd blur
 python blur.py
 ```
 
-![Original](blur/original.png)
+#### Before
+
+![o](blur/original.png)
+
+#### After
+
+![r](blur/teng-res.png)
+![r](blur/glvn-res.png)
