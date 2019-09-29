@@ -20,21 +20,21 @@ class DualSimplexx(Simplexx):
         # - транспонировать A, B, C.
         # - поменять знаки >= -> <= путем домножения левой и правой части на -1
         # - инвертировать условие MAX -> MIN
-        a_t = -1 * np.transpose(a)
-        lambdas_t = np.transpose(b)
-        b_t = -1 * np.transpose(lambdas)
-        cond_inverted = DualSimplexx._invert_condition(condition)
-        super().__init__(a_t, b_t, lambdas_t, cond_inverted)
+        if condition is Condition.MAX:
+            a_t = -1 * np.transpose(a)
+            lambdas_t = np.transpose(b)
+            b_t = -1 * np.transpose(lambdas)
+            cond = Condition.MIN
 
-    @staticmethod
-    def _invert_condition(cond: Condition) -> Condition:
-        if cond is Condition.MAX:
-            return Condition.MIN
-
-        elif cond is Condition.MIN:
-            return Condition.MAX
+        elif condition is Condition.MIN:
+            a_t = -1 * np.transpose(a)
+            lambdas_t = -1 * np.transpose(b)
+            b_t = np.transpose(lambdas)
+            cond = Condition.MAX
         else:
-            raise ValueError('Неверное условие')
+            raise ValueError('Неверное условие!')
+
+        super().__init__(a_t, b_t, lambdas_t, cond)
 
 
 if __name__ == '__main__':

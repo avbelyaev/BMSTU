@@ -32,6 +32,28 @@ class TestDualSimplexxMethods(unittest.TestCase):
         self.assertEqual(expected_f_value, primary_solution['F'])
         self.assertEqual(expected_f_value, dual_solution['F'])
 
+    def test_example_1_from_book(self):
+        a = np.array([[1, -2],
+                      [-2, 1],
+                      [1, 1]])
+        b = np.array([[2],
+                      [-2],
+                      [5]])
+        lambdas = np.array([[-1, 1]])
+
+        # when
+        print('===  Прямая ===')
+        primary_solution = Simplexx(a, b, lambdas, Condition.MIN).run()
+
+        # when
+        print('\n\n\n===  Двойственная ===')
+        dual_solution = DualSimplexx(a, b, lambdas, Condition.MIN).run()
+
+        # then
+        expected_f_value = -3
+        self.assertEqual(expected_f_value, primary_solution['F'])
+        self.assertEqual(expected_f_value, dual_solution['F'])
+
     # пример из методички. стр 40
     def test_example_2_from_book(self):
         a = np.array([[3, 1, -4, -1],
