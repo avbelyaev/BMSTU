@@ -4,7 +4,7 @@ import unittest
 # relative to venv ? venv now at /BMSTU/venv
 import numpy as np
 
-from _masters_.decision_theory.lab1_simplexx.simplexx import Simplexx, NoOptimalSolutionExists, NoAllowedSolutionExists, \
+from _masters_.decision_theory.lab1_simplexx.simplexx import Simplexx, NoOptimalSolutionExists, NoPivotalSolutionExists, \
     Condition
 
 
@@ -94,7 +94,7 @@ class TestSimplexxMethods(unittest.TestCase):
         lambdas = np.array([[3, 2]])
 
         # expect
-        self.assertRaises(NoAllowedSolutionExists, Simplexx(a, b, lambdas, Condition.MAX).run)
+        self.assertRaises(NoPivotalSolutionExists, Simplexx(a, b, lambdas, Condition.MAX).run)
 
     def test_change_basis_1(self):
         # given

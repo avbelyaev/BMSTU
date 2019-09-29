@@ -5,7 +5,7 @@ import numpy as np
 from copy import deepcopy
 
 
-class NoAllowedSolutionExists(Exception):
+class NoPivotalSolutionExists(Exception):
     def __init__(self):
         super().__init__('Допустимого(опорного) решения не существует')
 
@@ -194,7 +194,7 @@ class Simplexx:
 
             determining_col = self.find_first_negative_col(negative_free_var_row)
             if determining_col is None:
-                raise NoAllowedSolutionExists()
+                raise NoPivotalSolutionExists()
 
             # Найдем минимальное положительное отношение элмента свободных членов si0
             # к соответствующем эле- менту в разрешающем столбце

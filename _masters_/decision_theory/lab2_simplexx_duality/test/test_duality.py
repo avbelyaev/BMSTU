@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 
 # relative to venv ? venv now at /BMSTU/venv
-from _masters_.decision_theory.lab1_simplexx.simplexx import Condition, NoAllowedSolutionExists, NoOptimalSolutionExists
+from _masters_.decision_theory.lab1_simplexx.simplexx import Condition, NoPivotalSolutionExists, NoOptimalSolutionExists
 from _masters_.decision_theory.lab2_simplexx_duality.duality import DualSimplexx
 
 
@@ -92,7 +92,7 @@ class TestDualSimplexxMethods(unittest.TestCase):
         lambdas = np.array([[3, 2]])
 
         # expect
-        self.assertRaises(NoAllowedSolutionExists, DualSimplexx(a, b, lambdas, Condition.MAX).run)
+        self.assertRaises(NoPivotalSolutionExists, DualSimplexx(a, b, lambdas, Condition.MAX).run)
 
 
 if __name__ == '__main__':
