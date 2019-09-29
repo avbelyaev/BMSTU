@@ -93,7 +93,7 @@ class Simplexx:
         return None
 
     # В строке ищем первый отрицательный элемент
-    def find_first_negative_col(self, row: int) ->Optional[int]:
+    def find_first_negative_col(self, row: int) -> Optional[int]:
         #  пропускаем 0й столбец со свободными переменными
         i = 1
         while i < self._get_cols():
@@ -106,7 +106,7 @@ class Simplexx:
     def find_determining_column(self) -> Optional[int]:
         lambdas_row = self.tbl[self._get_rows() - 1:]
         labdas_row_len = self._get_cols()
-        i = 1       # пропускаем столбец свободных сленов
+        i = 1  # пропускаем столбец свободных сленов
         while i < labdas_row_len:
             if float(lambdas_row[0, i]) > 0:
                 # ищем первый положительный элемент
@@ -272,6 +272,7 @@ class Simplexx:
 
 
 def main():
+    """ см тесты """
     a = np.array([[3, 1, -4, -1],
                   [-2, -4, -1, 1]])
     b = np.array([[-3],

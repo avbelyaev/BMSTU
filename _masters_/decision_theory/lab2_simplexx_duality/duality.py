@@ -36,6 +36,7 @@ class DualSimplexx(Simplexx):
 
 
 def main():
+    """ см тесты """
     a = np.array([[3, 1, -4, -1],
                   [-2, -4, -1, 1]])
     b = np.array([[-3],

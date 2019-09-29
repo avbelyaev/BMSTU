@@ -4,7 +4,8 @@ import unittest
 import numpy as np
 
 # relative to venv ? venv now at /BMSTU/venv
-from _masters_.decision_theory.lab1_simplexx.simplexx import Condition, NoPivotalSolutionExists, NoOptimalSolutionExists
+from _masters_.decision_theory.lab1_simplexx.simplexx import Condition, NoPivotalSolutionExists, \
+    NoOptimalSolutionExists, Simplexx
 from _masters_.decision_theory.lab2_simplexx_duality.duality import DualSimplexx
 
 
@@ -19,20 +20,41 @@ class TestDualSimplexxMethods(unittest.TestCase):
         lambdas = np.array([[2, 8, 3]])
 
         # when
-        solution = DualSimplexx(a, b, lambdas, Condition.MAX).run()
-
-        # then
-        actual_f_value = solution['F']
-        self.assertEqual(25.5, actual_f_value)
+        print('===  Прямая ===')
+        primary_solution = Simplexx(a, b, lambdas, Condition.MAX).run()
 
         # when
-        solution = DualSimplexx(a, b, lambdas, Condition.MIN).run()
+        print('\n\n\n===  Двойственная ===')
+        dual_solution = DualSimplexx(a, b, lambdas, Condition.MAX).run()
 
         # then
-        actual_f_value = solution['F']
-        self.assertEqual(0, actual_f_value)
+        expected_f_value = 25.5
+        self.assertEqual(expected_f_value, primary_solution['F'])
+        self.assertEqual(expected_f_value, dual_solution['F'])
 
-    def test_example_from_book(self):
+    def test_example_1_from_book(self):
+        a = np.array([[1, -2],
+                      [-2, 1],
+                      [1, 1]])
+        b = np.array([[2],
+                      [-2],
+                      [5]])
+        lambdas = np.array([[-1, 1]])
+
+        # when
+        print('===  Прямая ===')
+        primary_solution = Simplexx(a, b, lambdas, Condition.MIN).run()
+
+        # when
+        print('\n\n\n===  Двойственная ===')
+        dual_solution = DualSimplexx(a, b, lambdas, Condition.MIN).run()
+
+        # then
+        expected_f_value = -3
+        self.assertEqual(expected_f_value, primary_solution['F'])
+        self.assertEqual(expected_f_value, dual_solution['F'])
+
+    def test_example_2_from_book(self):
         a = np.array([[3, 1, -4, -1],
                       [-2, -4, -1, 1]])
         b = np.array([[-3],
@@ -40,35 +62,17 @@ class TestDualSimplexxMethods(unittest.TestCase):
         lambdas = np.array([[-4, -18, -30, -5]])
 
         # when
-        solution = DualSimplexx(a, b, lambdas, Condition.MAX).run()
-
-        # then
-        actual_f_value = solution['F']
-        self.assertEqual(-36, actual_f_value)
-
-    def test_simplex_1(self):
-        # given
-        a = np.array([[1, -2],
-                      [-2, 1],
-                      [1, 1]])
-        b = np.array([[2],
-                      [-2],
-                      [5]])
-        lambdas = np.array([[1, -1]])
+        print('===  Прямая ===')
+        primary_solution = Simplexx(a, b, lambdas, Condition.MAX).run()
 
         # when
-        solutions = DualSimplexx(a, b, lambdas, Condition.MAX).run()
+        print('\n\n\n===  Двойственная ===')
+        dual_solution = DualSimplexx(a, b, lambdas, Condition.MAX).run()
 
         # then
-        expected_best_solution = ({
-            'x_1': 4.0,
-            'x_2': 1.0,
-            'x_3': 0,
-            'x_4': 5.0,
-            'x_5': 0,
-            'F': 3.0
-        })
-        self.assertEqual(expected_best_solution, solutions)
+        expected_f_value = -36
+        self.assertEqual(expected_f_value, primary_solution['F'])
+        self.assertEqual(expected_f_value, dual_solution['F'])
 
     # неограниченное решение
     def test_unbounded_solution(self):
