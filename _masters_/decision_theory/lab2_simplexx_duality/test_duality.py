@@ -75,6 +75,28 @@ class TestDualSimplexxMethods(unittest.TestCase):
         self.assertEqual(expected_f_value, primary_solution['F'])
         self.assertEqual(expected_f_value, dual_solution['F'])
 
+    def test_var_10(self):
+        a = np.array([[4, 1, 1],
+                      [1, 2, 0],
+                      [0, 0.5, 1]])
+        b = np.array([[4],
+                      [3],
+                      [2]])
+        lambdas = np.array([[7, 5, 3]])
+
+        # when
+        print('===  Прямая ===')
+        primary_solution = Simplexx(a, b, lambdas, Condition.MAX).run()
+
+        # when
+        print('\n\n\n===  Двойственная ===')
+        dual_solution = DualSimplexx(a, b, lambdas, Condition.MAX).run()
+
+        # then
+        expected_f_value = 13
+        self.assertEqual(expected_f_value, primary_solution['F'])
+        self.assertEqual(expected_f_value, dual_solution['F'])
+
     # в прямой задаче нет оптимального решения -> в обратной нет опорного
     def test_unbounded_solution(self):
         # given

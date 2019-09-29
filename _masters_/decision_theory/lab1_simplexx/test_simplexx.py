@@ -66,7 +66,7 @@ class TestSimplexxMethods(unittest.TestCase):
         actual_f_value = solution['F']
         self.assertEqual(-36, actual_f_value)
 
-    def test_simplex_1(self):
+    def test_variable_mapping(self):
         # given
         a = np.array([[1, -2],
                       [-2, 1],
@@ -89,6 +89,23 @@ class TestSimplexxMethods(unittest.TestCase):
             'F': 3.0
         })
         self.assertEqual(expected_best_solution, solutions)
+
+    def test_var_10(self):
+        a = np.array([[4, 1, 1],
+                      [1, 2, 0],
+                      [0, 0.5, 1]])
+        b = np.array([[4],
+                      [3],
+                      [2]])
+        lambdas = np.array([[7, 5, 3]])
+
+        # when
+        print('===  Прямая ===')
+        primary_solution = Simplexx(a, b, lambdas, Condition.MAX).run()
+
+        # then
+        expected_f_value = 13
+        self.assertEqual(expected_f_value, primary_solution['F'])
 
     # неограниченное решение
     def test_unbounded_solution(self):
