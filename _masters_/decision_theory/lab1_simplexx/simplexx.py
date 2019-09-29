@@ -197,10 +197,10 @@ class Simplexx:
 
     def add_solution(self):
         variables = self.get_variables_mapping()
-        value = self.target_func()
+        value = self.get_target_func()
         self.solutions.append((variables, {'F': value}))
 
-    def target_func(self) -> float:
+    def get_target_func(self) -> float:
         # так как все свобоные переменные = 0,
         # то ответ лежит в первой клетке подвала таблицы
         rows = self.tbl.shape[0]
@@ -224,9 +224,6 @@ class Simplexx:
 
     def _get_cols(self) -> int:
         return self.tbl.shape[1]
-
-    def _to_column(self, xs: np.ndarray) -> np.ndarray:
-        return xs.reshape(xs.shape[0], 1)
 
 
 def main():
