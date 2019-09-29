@@ -4,26 +4,47 @@ import unittest
 # relative to venv ? venv now at /BMSTU/venv
 import numpy as np
 
-from _masters_.decision_theory.lab1_simplexx.simplexx import Simplexx, NoOptimalSolutionExists, NoAllowedSolutionExists
+from _masters_.decision_theory.lab1_simplexx.simplexx import Simplexx, NoOptimalSolutionExists, NoAllowedSolutionExists, \
+    Condition
 
 
 class TestSimplexxMethods(unittest.TestCase):
-    def test_var_3(self):
+    def test_var_3_MAX_MIN(self):
         a = np.array([[2, 1, 1],
                       [1, 2, 0],
                       [0, 0.5, 1]])
         b = np.array([[4],
                       [6],
                       [2]])
-        lambdas = np.array([2, 8, 3])  # TODO ищем минимум, хотя в задании указан максимум
+        lambdas = np.array([2, 8, 3])
 
         # when
-        solutions = Simplexx(a, b, lambdas).run()
+        solution = Simplexx(a, b, lambdas, Condition.MAX).run()
 
         # then
-        expected_best_solution = ({'F': -25.5})
-        actual_f_value = solutions[-1][1]
-        self.assertEqual(expected_best_solution, actual_f_value)
+        actual_f_value = solution['F']
+        self.assertEqual(25.5, actual_f_value)
+
+        # when
+        solution = Simplexx(a, b, lambdas, Condition.MIN).run()
+
+        # then
+        actual_f_value = solution['F']
+        self.assertEqual(0, actual_f_value)
+
+    def test_example_from_book(self):
+        a = np.array([[3, 1, -4, -1],
+                      [-2, -4, -1, 1]])
+        b = np.array([[-3],
+                      [-3]])
+        lambdas = np.array([-4, -18, -30, -5])
+
+        # when
+        solution = Simplexx(a, b, lambdas, Condition.MAX).run()
+
+        # then
+        actual_f_value = solution['F']
+        self.assertEqual(-36, actual_f_value)
 
     def test_simplex_1(self):
         # given
@@ -33,15 +54,21 @@ class TestSimplexxMethods(unittest.TestCase):
         b = np.array([[2],
                       [-2],
                       [5]])
-        lambdas = np.array([1, -1])  # TODO ищем минимум, хотя в задании указан максимум
+        lambdas = np.array([1, -1])
 
         # when
-        s = Simplexx(a, b, lambdas)
-        solutions = s.run()
+        solutions = Simplexx(a, b, lambdas, Condition.MAX).run()
 
         # then
-        expected_best_solution = ({'x_3': 0, 'x_5': 0, 'x_4': 5.0, 'x_1': 4.0, 'x_2': 1.0}, {'F': -3.0})
-        self.assertEqual(expected_best_solution, solutions[-1])
+        expected_best_solution = ({
+            'x_1': 4.0,
+            'x_2': 1.0,
+            'x_3': 0,
+            'x_4': 5.0,
+            'x_5': 0,
+            'F': 3.0
+        })
+        self.assertEqual(expected_best_solution, solutions)
 
     # неограниченное решение
     def test_unbounded_solution(self):
@@ -50,10 +77,10 @@ class TestSimplexxMethods(unittest.TestCase):
                       [1, 0]])
         b = np.array([[10],
                       [20]])
-        lambdas = np.array([1, 2])  # TODO ищем минимум, хотя в задании указан максимум
+        lambdas = np.array([1, 2])
 
         # expect
-        self.assertRaises(NoOptimalSolutionExists, Simplexx(a, b, lambdas).run)
+        self.assertRaises(NoOptimalSolutionExists, Simplexx(a, b, lambdas, Condition.MAX).run)
 
     # нет допустимого решения
     def test_no_allowed_solution(self):
@@ -65,11 +92,11 @@ class TestSimplexxMethods(unittest.TestCase):
         lambdas = np.array([3, 2])
 
         # expect
-        self.assertRaises(NoAllowedSolutionExists, Simplexx(a, b, lambdas).run)
+        self.assertRaises(NoAllowedSolutionExists, Simplexx(a, b, lambdas, Condition.MAX).run)
 
     def test_change_basis_1(self):
         # given
-        simplex = Simplexx(None, None, None)
+        simplex = Simplexx(None, None, None, Condition.MAX)
         simplex.tbl = np.array([[2, 1, -2],
                                 [-2, -2, 1],
                                 [5, 1, 1],
@@ -97,7 +124,7 @@ class TestSimplexxMethods(unittest.TestCase):
 
     def test_change_basis_2(self):
         # given
-        simplex = Simplexx(None, None, None)
+        simplex = Simplexx(None, None, None, Condition.MAX)
         simplex.tbl = np.array([[1, 1/2, -3/2],
                                 [1, -1/2, -1/2],
                                 [4, 1/2, 3/2],
@@ -125,7 +152,7 @@ class TestSimplexxMethods(unittest.TestCase):
 
     def test_change_basis_3(self):
         # given
-        simplex = Simplexx(None, None, None)
+        simplex = Simplexx(None, None, None, Condition.MAX)
         simplex.tbl = np.array([[2, 2, -3],
                                 [2, 1, -2],
                                 [3, -1, 3],

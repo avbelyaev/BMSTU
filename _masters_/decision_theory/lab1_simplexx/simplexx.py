@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Optional
 
 import numpy as np
@@ -14,8 +15,20 @@ class NoOptimalSolutionExists(Exception):
         super().__init__('Фукнция не ограничена! Оптимального решения не существует')
 
 
+class Condition(Enum):
+    MIN = 0
+    MAX = 1
+
+
 class Simplexx:
-    def __init__(self, a: np.ndarray, b: np.ndarray, lambdas: np.ndarray):
+    def __init__(self, a: np.ndarray, b: np.ndarray, lambdas: np.ndarray, condition: Condition):
+        """
+        in form of AX<=B
+        :param a: A
+        :param b: B
+        :param lambdas: aka C
+        :param condition: min or max
+        """
         self.matr = a
         self.b = b
         self.lambdas = lambdas
@@ -23,6 +36,7 @@ class Simplexx:
         self.header_top = []
         self.header_left = []
         self.solutions = []
+        self.condition = condition
 
     def create_simplex_table(self) -> np.ndarray:
         row_num = self.matr.shape[0]
@@ -46,10 +60,24 @@ class Simplexx:
         # добавляем колонку b'шек слева
         tbl = np.hstack((self.b, tbl))
 
-        # добавляем строку лямбд внизу
+        # алгоритм ниже расчитан на поиск MAX
+        # но ответ домножаем на -1
+        if self.condition is Condition.MAX:
+            pass
+        # если надо найти MIN, то
+        # - строку лямбд (aka С) домножаем на -1
+        # - ответ (значение F в конце решения) оставляем как есть
+        elif self.condition is Condition.MIN:
+            self.lambdas = -1 * self.lambdas
+        else:
+            raise ValueError('Неверное условие')
+
+        # добавляем 0 в начало строки лямбд
         pos = 0
         additional_zero_elem = 0
         lambdas = np.insert(self.lambdas, pos, additional_zero_elem, axis=0)
+
+        # добавляем строку лямбд внизу
         tbl = np.vstack((tbl, lambdas))
         tbl = tbl.astype(dtype='float64')
         return tbl
@@ -77,8 +105,8 @@ class Simplexx:
     # поиск резрешающего столбца
     def find_determining_column(self) -> Optional[int]:
         lambdas_row = self.tbl[self._get_rows() - 1:]
-        labdas_row_len = lambdas_row.shape[1]
-        i = 0
+        labdas_row_len = self._get_cols()
+        i = 1       # пропускаем столбец свободных сленов
         while i < labdas_row_len:
             if float(lambdas_row[0, i]) > 0:
                 # ищем первый положительный элемент
@@ -155,7 +183,7 @@ class Simplexx:
         self.header_top[k] = self.header_left[r]
         self.header_left[r] = tmp
 
-    def run(self) -> (dict, float):
+    def run(self) -> dict:
         self.tbl = self.create_simplex_table()
 
         print('Поиск опорного решения')
@@ -178,7 +206,8 @@ class Simplexx:
 
         # Так как все элементы столбца si0 неотрицательны, имеем опорное решение
         self.add_solution()
-        print(self.solutions[-1])
+        print('Опорное решение:')
+        print(self.best_solution)
 
         print('Поиск оптимального решения')
         while True:
@@ -193,18 +222,34 @@ class Simplexx:
             self.change_basis(determining_row, determining_col)
             self.add_solution()
 
-        return self.solutions
+            print('Более оптимальное решение:')
+            print(self.best_solution)
+
+        return self.best_solution
+
+    @property
+    def best_solution(self) -> dict:
+        # последнее решение
+        return self.solutions[-1]
 
     def add_solution(self):
         variables = self.get_variables_mapping()
-        value = self.get_target_func()
-        self.solutions.append((variables, {'F': value}))
+        f_value = self.get_target_func()
+        self.solutions.append({**variables, **{'F': f_value}})
 
     def get_target_func(self) -> float:
         # так как все свобоные переменные = 0,
         # то ответ лежит в первой клетке подвала таблицы
         rows = self.tbl.shape[0]
-        return self.tbl[rows - 1, 0]
+        f_value = round(self.tbl[rows - 1, 0], ndigits=2)
+
+        #  см заметики при составлении таблицы
+        if self.condition is Condition.MIN:
+            return f_value
+        elif self.condition is Condition.MAX:
+            return -1 * f_value
+        else:
+            raise ValueError('Неверное условие')
 
     def get_variables_mapping(self) -> dict:
         res = dict()
@@ -215,7 +260,7 @@ class Simplexx:
                 res[x_i] = 0
         j = 0
         for x_j in self.header_left:
-            res[x_j] = self.tbl[j, 0]
+            res[x_j] = round(self.tbl[j, 0], ndigits=2)
             j += 1
         return res
 
@@ -227,18 +272,17 @@ class Simplexx:
 
 
 def main():
-    a = np.array([[2, 1, 1],
-                  [1, 2, 0],
-                  [0, 0.5, 1]])
-    b = np.array([[4],
-                  [6],
-                  [2]])
-    lambdas = np.array([2, 8, 3])   # TODO ищем минимум, хотя в задании указан максимум
+    a = np.array([[3, 1, -4, -1],
+                  [-2, -4, -1, 1]])
+    b = np.array([[-3],
+                  [-3]])
+    lambdas = np.array([-4, -18, -30, -5])
 
-    s = Simplexx(a, b, lambdas)
-    solutions = s.run()
+    s = Simplexx(a, b, lambdas, Condition.MAX)
+    solution = s.run()
 
-    [print(s) for s in solutions]
+    print('\nОтвет:')
+    print(solution)
 
 
 if __name__ == '__main__':
