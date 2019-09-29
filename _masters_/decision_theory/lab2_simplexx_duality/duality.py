@@ -33,22 +33,10 @@ class DualSimplexx(Simplexx):
 
         elif cond is Condition.MIN:
             return Condition.MAX
-
-
-def main():
-    """ см тесты """
-    a = np.array([[3, 1, -4, -1],
-                  [-2, -4, -1, 1]])
-    b = np.array([[-3],
-                  [-3]])
-    lambdas = np.array([[-4, -18, -30, -5]])
-
-    s = DualSimplexx(a, b, lambdas, Condition.MAX)
-    solution = s.run()
-
-    print('\nОтвет:')
-    print(solution)
+        else:
+            raise ValueError('Неверное условие')
 
 
 if __name__ == '__main__':
-    main()
+    print('см. тесты')
+    pass

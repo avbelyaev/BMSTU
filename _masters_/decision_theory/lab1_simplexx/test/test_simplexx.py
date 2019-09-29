@@ -34,6 +34,7 @@ class TestSimplexxMethods(unittest.TestCase):
         actual_f_value = solution['F']
         self.assertEqual(0, actual_f_value)
 
+    # пример из методички, стр 31
     def test_example_1_from_book(self):
         a = np.array([[1, -2],
                       [-2, 1],
@@ -50,6 +51,7 @@ class TestSimplexxMethods(unittest.TestCase):
         actual_f_value = solution['F']
         self.assertEqual(-3, actual_f_value)
 
+    # пример из методички. стр 40
     def test_example_2_from_book(self):
         a = np.array([[3, 1, -4, -1],
                       [-2, -4, -1, 1]])

@@ -271,20 +271,6 @@ class Simplexx:
         return self.tbl.shape[1]
 
 
-def main():
-    """ см тесты """
-    a = np.array([[3, 1, -4, -1],
-                  [-2, -4, -1, 1]])
-    b = np.array([[-3],
-                  [-3]])
-    lambdas = np.array([[-4, -18, -30, -5]])
-
-    s = Simplexx(a, b, lambdas, Condition.MAX)
-    solution = s.run()
-
-    print('\nОтвет:')
-    print(solution)
-
-
 if __name__ == '__main__':
-    main()
+    print('см. тесты')
+    pass
