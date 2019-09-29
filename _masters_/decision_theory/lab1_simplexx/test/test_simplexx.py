@@ -16,9 +16,10 @@ class TestSimplexxMethods(unittest.TestCase):
         b = np.array([[4],
                       [6],
                       [2]])
-        lambdas = np.array([2, 8, 3])
+        lambdas = np.array([[2, 8, 3]])
 
         # when
+        print('=== MAX ===')
         solution = Simplexx(a, b, lambdas, Condition.MAX).run()
 
         # then
@@ -26,6 +27,7 @@ class TestSimplexxMethods(unittest.TestCase):
         self.assertEqual(25.5, actual_f_value)
 
         # when
+        print('=== MIN ===')
         solution = Simplexx(a, b, lambdas, Condition.MIN).run()
 
         # then
@@ -37,7 +39,7 @@ class TestSimplexxMethods(unittest.TestCase):
                       [-2, -4, -1, 1]])
         b = np.array([[-3],
                       [-3]])
-        lambdas = np.array([-4, -18, -30, -5])
+        lambdas = np.array([[-4, -18, -30, -5]])
 
         # when
         solution = Simplexx(a, b, lambdas, Condition.MAX).run()
@@ -54,7 +56,7 @@ class TestSimplexxMethods(unittest.TestCase):
         b = np.array([[2],
                       [-2],
                       [5]])
-        lambdas = np.array([1, -1])
+        lambdas = np.array([[1, -1]])
 
         # when
         solutions = Simplexx(a, b, lambdas, Condition.MAX).run()
@@ -77,7 +79,7 @@ class TestSimplexxMethods(unittest.TestCase):
                       [1, 0]])
         b = np.array([[10],
                       [20]])
-        lambdas = np.array([1, 2])
+        lambdas = np.array([[1, 2]])
 
         # expect
         self.assertRaises(NoOptimalSolutionExists, Simplexx(a, b, lambdas, Condition.MAX).run)
@@ -89,7 +91,7 @@ class TestSimplexxMethods(unittest.TestCase):
                       [-3, -4]])
         b = np.array([[2],
                       [-12]])
-        lambdas = np.array([3, 2])
+        lambdas = np.array([[3, 2]])
 
         # expect
         self.assertRaises(NoAllowedSolutionExists, Simplexx(a, b, lambdas, Condition.MAX).run)

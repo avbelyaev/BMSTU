@@ -75,7 +75,7 @@ class Simplexx:
         # добавляем 0 в начало строки лямбд
         pos = 0
         additional_zero_elem = 0
-        lambdas = np.insert(self.lambdas, pos, additional_zero_elem, axis=0)
+        lambdas = np.insert(self.lambdas[0], pos, additional_zero_elem, axis=0)
 
         # добавляем строку лямбд внизу
         tbl = np.vstack((tbl, lambdas))
@@ -276,7 +276,7 @@ def main():
                   [-2, -4, -1, 1]])
     b = np.array([[-3],
                   [-3]])
-    lambdas = np.array([-4, -18, -30, -5])
+    lambdas = np.array([[-4, -18, -30, -5]])
 
     s = Simplexx(a, b, lambdas, Condition.MAX)
     solution = s.run()
