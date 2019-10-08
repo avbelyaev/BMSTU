@@ -13,7 +13,8 @@ Ctrl-C
 #### 4. Определить версию сервера
 ```postgres-sql
 SELECT verison();
--- PostgreSQL 10.10 (Debian 10.10-1.pgdg90+1) on x86_64-pc-linux-gnu, compiled by gcc
+-- PostgreSQL 10.10 (Debian 10.10-1.pgdg90+1) 
+--   on x86_64-pc-linux-gnu, compiled by gcc
 ```
 
 
@@ -79,9 +80,145 @@ CREATE TABLESPACE myts2 OWNER ics LOCATION '/home/space2';
 
 
 
-CREATE TABLESPACE space1 OWNER ics LOCATION '/home/space1';
+### 4. Создать БД
 
--- заходим в контейнер `docker exec -it <container-id> bash
--- проверяем, что в /home/space1 куча мусора
+#### 1. Создать БД mydb
+
+```postgres-sql
+DROP DATABASE IF EXISTS mydb;
+
+CREATE DATABASE mydb
+    WITH 
+    OWNER = ics
+    ENCODING = 'UTF8'
+    TABLESPACE = myts1;
+    
+    
+```
+
+#### 2. Создать БД mytest
+
+```postgres-sql
+CREATE DATABASE mytest
+    WITH 
+    OWNER = ics
+    ENCODING = 'UTF8'
+    TABLESPACE = myts2;
+```
+
+#### 3. Уничтожить БД mytest
+
+```postgres-sql
+DROP DATABASE IF EXISTS mytest;
+```
 
 
+
+### 5. Создать схемы
+
+#### 1. myschem1 (myschem2) для mydb1
+
+- переключаемся на БД mydb1
+```postgres-sql
+CREATE SCHEMA IF NOT EXISTS myschem1;
+CREATE SCHEMA IF NOT EXISTS myschem2;
+```
+
+#### 3. Определит текущею схему
+
+`select current_schema();` или `SHOW search_path;`
+
+#### 4. Сделать myschem2 текущей
+
+```postgres-sql
+SET search_path TO myschem2;
+SHOW search_path;
+```
+
+
+
+### 6. Создать последовательность
+
+#### 1. MySq c шагом 1
+
+```postgres-sql
+CREATE SEQUENCE IF NOT EXISTS mysq1
+	INCREMENT 1
+	START 1;
+```
+
+
+### 7. Создать Тип
+
+#### 1.Создать новый тип с описанием работника
+
+The CREATE TYPE statement allows you to create a composite type, 
+which can be use as the return type of a function.
+
+```postgres-sql
+CREATE TYPE fio AS
+(
+	name character(40), 
+ 	soname character(40), 
+	family character(40),
+	gender character(1)
+);
+```
+
+
+
+### 8. Создать домен
+
+In PostgreSQL, a domain is a data type with optional constraints e.g., 
+NOT NULL, CHECK etc. A domain has a unique name within the schema scope.
+Domains are useful for centralizing management of fields with the common constraints.
+
+```postgres-sql
+CREATE DOMAIN mydom AS 
+    INT CHECK (value < 7);
+```
+
+
+
+### 9. Добавить расширение pg_freespacemap
+
+`CREATE EXTENSION pg_freespacemap;`
+
+
+
+### 10.Таблицы
+
+- a. Создать в схеме myschem1 таблицы согласно перечисленным ниже требованиям
+- b. Создать связи между таблицами, как показано на логической схеме БД
+- c. Посмотреть каталог где располагается таблица
+
+
+#### Таблица EMPLOYERS
+
+- 1. Первичные ключи объявить на основе последовательности.
+- 2. aSTelephone объявить как массив строк.
+- 3. Добавить столбец FIO1 типа fio
+
+```postgres-sql
+CREATE TABLE employers
+(
+	ID_EMP 				BIGINT PRIMARY KEY DEFAULT nextval('mysq1'),
+	SName 				VARCHAR(40),
+	SFamily 			VARCHAR(40),
+	SPosition 			VARCHAR(40),
+	SSex 				BOOLEAN,
+	aSTelephone 		TEXT [],
+	SOrganization 		VARCHAR(255),
+	S_FIO_EMPL 			VARCHAR(50),
+	SLogin				VARCHAR(40),
+	SPSW 				CHAR(10),
+	IAccess 			BOOLEAN,
+	sTCHF				VARCHAR(20)
+)
+```
+
+
+#### Таблицы требований TIT_OUT
+
+- 1. Первичные ключи объявить на основе автоинкрементальный (Serial).
+- 2. iCODE уникальное поле
