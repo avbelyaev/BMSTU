@@ -10,6 +10,25 @@ Ctrl-C
 #### 3. Посмотреть журнал.
 журнал - в `./postgres-logs`
 
+пример записей:
+```
+2019-10-08 23:07:19.192 UTC [24] LOG:  database system was not properly shut down; automatic recovery in progress
+2019-10-08 23:07:19.289 UTC [24] LOG:  invalid record length at 0/1638080: wanted 24, got 0
+2019-10-08 23:07:19.289 UTC [24] LOG:  redo is not required
+2019-10-08 23:07:19.508 UTC [1] LOG:  database system is ready to accept connections
+2019-10-08 23:16:46.606 UTC [61] ERROR:  database "ics" already exists
+2019-10-08 23:16:46.606 UTC [61] STATEMENT:  CREATE DATABASE ics
+        WITH 
+        OWNER = ics
+        ENCODING = 'UTF8'
+        LC_COLLATE = 'en_US.utf8'
+        LC_CTYPE = 'en_US.utf8'
+        TABLESPACE = myts1
+        CONNECTION LIMIT = -1;
+2019-10-08 23:17:26.265 UTC [61] ERROR:  cannot drop the currently open database
+2019-10-08 23:17:26.265 UTC [61] STATEMENT:  DROP DATABASE ics;
+```
+
 #### 4. Определить версию сервера
 ```postgres-sql
 SELECT verison();
@@ -24,6 +43,14 @@ SELECT verison();
 
 #### 1. Посмотрите файл настройки сервера
 в контейнере под адресу `/var/lib/postgresql/data/postgresql.conf`
+
+- аутнетификация и авторзация
+- файлы
+- WAL
+- соединение
+- оптимизация 
+- обработка ошибок
+- vacuum
 
 #### 2. Посмотреть содержание pg_log, pg_сlog, pg_хlog
 
@@ -92,8 +119,6 @@ CREATE DATABASE mydb
     OWNER = ics
     ENCODING = 'UTF8'
     TABLESPACE = myts1;
-    
-    
 ```
 
 #### 2. Создать БД mytest
@@ -143,8 +168,8 @@ SHOW search_path;
 
 ```postgres-sql
 CREATE SEQUENCE IF NOT EXISTS mysq1
-	INCREMENT 1
-	START 1;
+    INCREMENT 1
+    START 1;
 ```
 
 
@@ -158,10 +183,10 @@ which can be use as the return type of a function.
 ```postgres-sql
 CREATE TYPE fio AS
 (
-	name character(40), 
- 	soname character(40), 
-	family character(40),
-	gender character(1)
+    name    character(40), 
+    soname  character(40), 
+    family  character(40),
+    gender  character(1)
 );
 ```
 
@@ -193,32 +218,148 @@ CREATE DOMAIN mydom AS
 - c. Посмотреть каталог где располагается таблица
 
 
-#### Таблица EMPLOYERS
+- Таблица EMPLOYERS
+    - 1. Первичные ключи объявить на основе последовательности.
+    - 2. aSTelephone объявить как массив строк.
+    - 3. Добавить столбец FIO1 типа fio
 
-- 1. Первичные ключи объявить на основе последовательности.
-- 2. aSTelephone объявить как массив строк.
-- 3. Добавить столбец FIO1 типа fio
+- Таблица требований TIT_OUT
+    - 1. Первичные ключи объявить на основе автоинкрементальный (Serial).
+    - 2. iCODE уникальное поле
+
+- Таблица NOM_OUT
+    1. Первичные ключи определиться как автоинкрементальный (Serial)
+    2. Дата по умолчанию текущая
+    3. Предусмотреть поля для внешних ключей ID_TIT и ID_NOM
+    4. Связать таблицы как указано на схеме
+
+- Таблица TIT_IN
+    1. Первичные ключи объявить автоинкрементальный
+    2. iCODE уникальный
+    
+- Таблицы NOM_IN
+    1. Первичные ключи определиться как автоинкрементальный (Serial).
+    2. Предусмотреть поля для внешних ключей ID_TIT и ID_NOM
+    3. Дата текущая
+    4. Связать таблицы как указано на схеме
 
 ```postgres-sql
+DROP TABLE IF EXISTS employers;
+DROP TABLE IF EXISTS tit_out;
+DROP TABLE IF EXISTS title_in;
+DROP TABLE IF EXISTS nom_out;
+DROP TABLE IF EXISTS nom_in; 
+DROP TABLE IF EXISTS nomenclatura;
+
 CREATE TABLE employers
 (
-	ID_EMP 				BIGINT PRIMARY KEY DEFAULT nextval('mysq1'),
-	SName 				VARCHAR(40),
-	SFamily 			VARCHAR(40),
-	SPosition 			VARCHAR(40),
-	SSex 				BOOLEAN,
-	aSTelephone 		TEXT [],
-	SOrganization 		VARCHAR(255),
-	S_FIO_EMPL 			VARCHAR(50),
-	SLogin				VARCHAR(40),
-	SPSW 				CHAR(10),
-	IAccess 			BOOLEAN,
-	sTCHF				VARCHAR(20)
-)
+    ID_EMP              BIGINT PRIMARY KEY DEFAULT nextval('mysq1'),
+    SName               VARCHAR(40),
+    SFamily             VARCHAR(40),
+    FIO1                fio,
+    SPosition           VARCHAR(40),
+    SSex                BOOLEAN,
+    aSTelephone         TEXT [],
+    SOrganization       VARCHAR(255),
+    S_FIO_EMPL          VARCHAR(50),
+    SLogin              VARCHAR(40),
+    SPSW                CHAR(10),
+    IAccess             BOOLEAN,
+    sTCHF               VARCHAR(20)
+);
+
+
+CREATE TABLE nomenclatura
+(
+    ID_DRG               SERIAL PRIMARY KEY,
+    REM_ID               NUMERIC(6),
+    sCODE                VARCHAR(20) UNIQUE,
+    DRUG_BARF            NUMERIC(14),
+    DRUG_NAME            VARCHAR(255),
+    PACK1_QTTY           NUMERIC(4),
+    NOM_QTTY             NUMERIC(4),
+    INVAL_DATE           DATE,
+    siACTUAL             SMALLINT,
+    sINSTRUCTION         TEXT,
+    CHECK_DATE           DATE,
+    sNOTE                TEXT,
+    sTCHF                VARCHAR(20)
+);
+
+CREATE TABLE tit_out
+(
+    ID                   SERIAL PRIMARY KEY,
+    iDIVISION            INTEGER,
+    iCODE                NUMERIC(6) UNIQUE,
+    dDATE                DATE,
+    dLAST_CORR           DATE,
+    iWORK_UP             INT,
+    dWORK_UP             TIMESTAMP WITHOUT TIME ZONE,
+    sSUBSCR_APT          VARCHAR(30),
+    sSUBSCR_DIV          VARCHAR(30),
+    sNOTE                TEXT,
+    sTCHF                VARCHAR(20)
+);
+
+CREATE TABLE tit_in
+(
+    ID_TIT               SERIAL PRIMARY KEY,
+    EMP_ID               NUMERIC(10),
+    iCODE                VARCHAR(16) UNIQUE,
+    dDATE                DATE,
+    dLASTCORR            DATE,
+    dWORKUP              TIMESTAMP WITHOUT TIME ZONE,
+    nSUM                 NUMERIC(11, 2),
+    nCORR                NUMERIC(11, 2),
+    sSUBSCR              VARCHAR(30),
+    sNOTE                TEXT,
+    sTCHF                VARCHAR(20)
+);
+
+
+CREATE TABLE nom_in
+(
+    ID_CL                SERIAL PRIMARY KEY,
+    nQUANTITY            NUMERIC(12, 3),
+    nQUANT               NUMERIC(12, 3),
+    dLASTCORR            DATE NOT NULL DEFAULT CURRENT_DATE,
+    dtINPUT              TIMESTAMP WITHOUT TIME ZONE,
+    dDATE                DATE NOT NULL DEFAULT CURRENT_DATE,
+    PACK1_QTTY           NUMERIC(4),
+    NOM_QTTY             NUMERIC(4),
+    siERROR              SMALLINT,
+    sTCHF                VARCHAR(20),
+    ID_TIT               INT,   --nullable
+    ID_NOM               INT,   --nullable
+    CONSTRAINT fk_tit_out 
+        FOREIGN KEY (ID_TIT) 
+        REFERENCES tit_out (ID),
+    CONSTRAINT fk_nomenclatura
+        FOREIGN KEY (ID_NOM)
+        REFERENCES nomenclatura (ID_DRG)
+);
+
+CREATE TABLE nom_out
+(
+    ID                   SERIAL PRIMARY KEY,
+    nQUANT_C             NUMERIC(12, 3),
+    nQUANT_F             NUMERIC(12, 3),
+    dLAST_COOR           DATE NOT NULL DEFAULT CURRENT_DATE,
+    siERROR              SMALLINT,
+    dtINPUT              TIMESTAMP WITHOUT TIME ZONE,
+    dDATE                DATE NOT NULL DEFAULT CURRENT_DATE,
+    sUNIT                VARCHAR(1),
+    nPRICE               NUMERIC(12, 2),
+    siPROPIS             SMALLINT,
+    TIT_ID               NUMERIC(10),
+    sTCHF                VARCHAR(20),
+    ID_TIT               INT,    --nullable
+    ID_NOM               INT,    --nullable
+    CONSTRAINT fk_tit_out 
+        FOREIGN KEY (ID_TIT) 
+        REFERENCES tit_out (ID),
+    CONSTRAINT fk_nomenclatura
+        FOREIGN KEY (ID_NOM)
+        REFERENCES nomenclatura (ID_DRG)
+);
 ```
-
-
-#### Таблицы требований TIT_OUT
-
-- 1. Первичные ключи объявить на основе автоинкрементальный (Serial).
-- 2. iCODE уникальное поле
