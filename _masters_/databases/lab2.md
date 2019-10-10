@@ -243,13 +243,35 @@ CREATE DOMAIN mydom AS
     3. Дата текущая
     4. Связать таблицы как указано на схеме
 
+- Таблица NOMECLATURA
+    1. Первичные ключи объявить как автоинкрементальный (Serial)..
+    2. SCODE unique
+    3. dtINPOUT текущая дата  // такого вообще нет
+    
+- Таблица HEAD
+    1. Наследованием EMPLOYES 
+    2. Дополнительное поле nadd - надбавка
+    
+- Таблица INSTRUCTION
+    1. поле для текстовой информации inst
+    2. поле ins поле типа tsvector
+    
+the tsvector data type, where ts stands for "text search"); 
+to_tsquery for querying the vector for occurrences of certain words or phrases.
+
+
+    
 ```postgres-sql
+DROP TABLE IF EXISTS head;
 DROP TABLE IF EXISTS employers;
-DROP TABLE IF EXISTS tit_out;
-DROP TABLE IF EXISTS title_in;
+DROP TABLE IF EXISTS nom_in;
 DROP TABLE IF EXISTS nom_out;
-DROP TABLE IF EXISTS nom_in; 
+DROP TABLE IF EXISTS tit_out;
+DROP TABLE IF EXISTS tit_in;
 DROP TABLE IF EXISTS nomenclatura;
+DROP TABLE IF EXISTS instruction;
+
+
 
 CREATE TABLE employers
 (
@@ -362,4 +384,55 @@ CREATE TABLE nom_out
         FOREIGN KEY (ID_NOM)
         REFERENCES nomenclatura (ID_DRG)
 );
+
+CREATE TABLE head
+(
+	nadd                INT,
+	PRIMARY KEY (ID_EMP)
+) 
+INHERITS (employers);
+
+CREATE TABLE instruction
+(
+	inst                TEXT,
+	ins                 tsvector
+);
+```
+
+
+- Временная таблица Temp EMPLOYERS
+    1. Структура таблицы такая же как и EMPLOYERS
+    
+Временная таблица существует только в рамках текущей сессии. 
+Если создать новое подключение и выплнить `SELECT * FROM temp_employers;`, то таблица не найдется
+    
+```postgres-sql
+DROP TABLE IF EXISTS temp_employers;
+
+CREATE TEMPORARY TABLE temp_employers
+(
+    ID_EMP              BIGINT PRIMARY KEY DEFAULT nextval('mysq1'),
+    SName               VARCHAR(40),
+    SFamily             VARCHAR(40),
+    FIO1                fio,
+    SPosition           VARCHAR(40),
+    SSex                BOOLEAN,
+    aSTelephone         TEXT [],
+    SOrganization       VARCHAR(255),
+    S_FIO_EMPL          VARCHAR(50),
+    SLogin              VARCHAR(40),
+    SPSW                CHAR(10),
+    IAccess             BOOLEAN,
+    sTCHF               VARCHAR(20)
+);
+
+SELECT * FROM temp_employers;
+```
+
+
+Создать индекс по коду накладной, и дате поступления.
+
+```postgres-sql
+CREATE INDEX idx_nomanclatura_scode_inval_date
+    ON nomenclatura(sCODE, INVAL_DATE);
 ```
