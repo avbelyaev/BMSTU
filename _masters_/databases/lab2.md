@@ -141,21 +141,17 @@ DROP DATABASE IF EXISTS mytest;
 
 ### 5. Создать схемы
 
-#### 1. myschem1 (myschem2) для mydb1
-
-- переключаемся на БД mydb1
-```postgres-sql
-CREATE SCHEMA IF NOT EXISTS myschem1;
-CREATE SCHEMA IF NOT EXISTS myschem2;
-```
-
-#### 3. Определит текущею схему
+- 1. myschem1 (myschem2) для mydb1
+- 3. Определитб текущую схему
 
 `select current_schema();` или `SHOW search_path;`
 
-#### 4. Сделать myschem2 текущей
+- 4. Сделать myschem2 текущей
 
 ```postgres-sql
+CREATE SCHEMA IF NOT EXISTS myschem1;
+CREATE SCHEMA IF NOT EXISTS myschem2;
+
 SET search_path TO myschem2;
 SHOW search_path;
 ```
@@ -435,4 +431,54 @@ SELECT * FROM temp_employers;
 ```postgres-sql
 CREATE INDEX idx_nomanclatura_scode_inval_date
     ON nomenclatura(sCODE, INVAL_DATE);
+```
+
+
+
+
+### 11. SQL-операторы
+
+- Insert
+    1. 
+    2. Добавьте два номенклатуры в NOMECLATURA
+    3. Добавьте накладную без спецификации.
+    4. Добавьте номенклатуру в спецификацию.
+    5. Добавьте текст инструкции для обоих записей (текстовый файл)
+    6. Создать при помощи PREPARE функцию
+    7. Продублируйте строку с заданной номенклатурой.
+
+```postgres-sql
+-- 1. Добавьте двух работников в EMPLOYERS; один c двумя телефонами, 
+-- один c тремя телефонами, заполнитть столбец FIO1
+INSERT INTO employers(FIO1, aSTelephone) VALUES
+(('steve', 'rogers', 'marvel', 'm'), '{"8-800-555-3535", "8-915-144-4838"}'),
+(('tony', 'stark', 'marvel', 'm'), '{"+7-128-547-5491", "8-912-478-1928", "8-944-123-8549"}');
+
+--2. Добавьте две номенклатуры в NOMECLATURA
+INSERT INTO nomenclatura(sCODE, sINSTRUCTION) VALUES
+('nom 1', 'инструкция: сделать нормальную лабу'),
+('nom 2', '1.открыть, 2.сделать, 3.закрыть');
+
+--3. Добавьте накладную без спецификации.
+ что такое накладная????
+--4. Добавьте номенклатуру в спецификацию.
+что такое спецификация???
+
+--5. Добавьте текст инструкции для обоих записей (текстовый файл)
+-- см 2.
+
+--6. Создать при помощи PREPARE функцию
+--7. Продублируйте строку с заданной номенклатурой.
+CREATE OR REPLACE FUNCTION make_duplicate_nomenclatura(record_id int)
+  RETURNS void AS
+$func$
+BEGIN
+   EXECUTE format('INSERT INTO nomenclatura
+                   (
+                     sINSTRUCTION
+                   ) 
+                   SELECT sINSTRUCTION FROM nomenclatura
+                   WHERE ID_DRG = %s', record_id);
+END
+$func$ LANGUAGE plpgsql;
 ```
