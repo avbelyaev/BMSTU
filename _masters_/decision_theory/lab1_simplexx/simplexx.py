@@ -270,6 +270,12 @@ class Simplexx:
     def _get_cols(self) -> int:
         return self.tbl.shape[1]
 
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return f'{self.matr}'
+
 
 if __name__ == '__main__':
     print('см. тесты')
