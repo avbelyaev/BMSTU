@@ -229,8 +229,21 @@ class Simplexx:
 
     @property
     def best_solution(self) -> dict:
-        # последнее решение
-        return self.solutions[-1]
+        def is_all_poisitive_solution(sol: dict) -> bool:
+            for x in sol.keys():
+                if x != 'F' and sol[x] < 0:
+                    return False
+            return True
+
+        # последнее решение, при котором все x положительные. положительность x'ов - это одно из условий задачи
+        i = len(self.solutions) - 1
+        while i >= 0:
+            # идем от последнего к первому решению
+            if is_all_poisitive_solution(self.solutions[i]):
+                return self.solutions[i]
+            i -= 1
+        # если все плохие, возвращаем хоть какое-то
+        return self.solutions[0]
 
     def add_solution(self):
         variables = self.get_variables_mapping()

@@ -9,6 +9,22 @@ from _masters_.decision_theory.lab1_simplexx.simplexx import Simplexx, NoOptimal
 
 
 class TestSimplexxMethods(unittest.TestCase):
+    def test_branch_1(self):
+        a = np.array([[6, -1],
+                      [2, 5],
+                      [1, 0]])
+        b = np.array([[12],
+                      [20],
+                      [2]])
+        lambdas = np.array([[12, -1]])
+
+        # when
+        solution = Simplexx(a, b, lambdas, Condition.MAX).run()
+
+        # then
+        actual_f_value = solution['F']
+        self.assertEqual(24, actual_f_value)
+
     def test_var_3_MAX_MIN(self):
         a = np.array([[2, 1, 1],
                       [1, 2, 0],
