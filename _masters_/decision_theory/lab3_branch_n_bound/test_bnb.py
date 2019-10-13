@@ -10,6 +10,20 @@ from _masters_.decision_theory.lab3_branch_n_bound.bnb import BranchAndBound
 
 
 class TestBranchAndBound(unittest.TestCase):
+    def test_example_from_book(self):
+        a = np.array([[6, -1],
+                      [2, 5]])
+        b = np.array([[12],
+                      [20]])
+        lambdas = np.array([[12, -1]])
+
+        # when
+        solution = BranchAndBound(a, b, lambdas, Condition.MAX).run()
+
+        # then
+        expected_f = 24
+        self.assertEqual(expected_f, solution['F'])
+
     def test_var_3(self):
         a = np.array([[2, 1, 1],
                       [1, 2, 0],

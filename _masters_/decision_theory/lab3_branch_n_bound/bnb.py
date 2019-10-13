@@ -7,6 +7,11 @@ from _masters_.decision_theory.lab1_simplexx.simplexx import Simplexx, Condition
     NoPivotalSolutionExists, NoOptimalSolutionExists
 
 
+class NoIntegerSolutionExists(Exception):
+    def __init__(self):
+        super().__init__('Целочиселнного решения не существует!')
+
+
 class Sign(Enum):
     MINUS = 0
     PLUS = 1
@@ -16,24 +21,6 @@ def override(f):
     return f
 
 
-class Task:
-    def __init__(self, task_index: int, simplex: Simplexx):
-        self.k = task_index
-        self.simplex = simplex
-        try:
-            self.solution = simplex.run()
-            self.f_value = self.solution['F']
-        except (NoPivotalSolutionExists, NoOptimalSolutionExists):
-            self.solution = None
-            self.f_value = None
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        return f'Task[{self.k}]({self.simplex})'
-
-
 class BranchAndBound:
     def __init__(self, a: np.ndarray, b: np.ndarray, lambdas: np.ndarray, condition: Condition):
         # super().__init__(a, b, lambdas, condition)
@@ -41,86 +28,94 @@ class BranchAndBound:
         self.b = b
         self.lambdas = lambdas
         self.condition = condition
-        self.tasks = []
 
-    def first_non_integer_solution(self, solution: dict) -> Optional[dict]:
-        is_int = lambda val: isinstance(val, int) \
-                             or (isinstance(val, float) and val.is_integer())
+    @staticmethod
+    def first_non_integer_solution(solution: dict) -> Optional[dict]:
+        is_int = lambda val: isinstance(val, int) or (isinstance(val, float) and val.is_integer())
+
         for x_coord in solution.keys():
             if x_coord in ['x_1', 'x_2', 'x_3']:
-                # FIXME берем только x \in [x1, x2, x3]. x4 не берем
+                # FIXME берем только те 'x', которые есть в F. т.е. если len(lambdas)=3 => [x1,x2,x3]
                 if not is_int(solution[x_coord]):
                     return {x_coord: solution[x_coord]}
         return None
 
     @override
     def run(self):
-        # Ш.1.
-        k = 0
-        task = Task(k, Simplexx(self.matr, self.b, self.lambdas, self.condition))
-        non_int_value = self.first_non_integer_solution(task.solution)
-        print(f'Нецелочисленное решение: {non_int_value}')
+        parent_simplex = Simplexx(self.matr, self.b, self.lambdas, self.condition)
+        parent_solution = parent_simplex.run()
+        print(f'Решение: {parent_solution}')
 
-        # если решение нецелочисленное, включить k = 0 в множество J = {k} номеров задач,
-        # подлежащих дальнейшему ветвлению, и перейти на шаг 2
+        non_int_value = BranchAndBound.first_non_integer_solution(parent_solution)
         if non_int_value is not None:
-            self.tasks.insert(k, task)
+            print(f'Нецелочисленное решение: {non_int_value}. Разветвляем')
+            branch1, branch2 = BranchAndBound.split(parent_simplex, non_int_value)
 
-            # Ш.2. Выбрать задачу для приоритетного ветвления:
-            task_to_derieve = None
-            if 0 == k:
-                # выбрать для ветвления задачу ЗЛП-0,
-                # исключить номер k из множества J = {k} и перейти на Ш.3.
-                task_to_derieve = self.tasks[k]
-                del self.tasks[k]
+            try:
+                print('\n\nРешаем ветку 1')
+                child1_solution = branch1.run()
+            except (NoPivotalSolutionExists, NoOptimalSolutionExists) as e:
+                print(e)
+                child1_solution = None
 
-            elif 0 != k and 0 != len(self.tasks):
-                # выбрать номер задачи, которму соответствует
-                # максимальное значение целевой функции и перейти на Ш.3.
-                task_with_max_f_value = next(sorted(self.tasks,
-                                                    key=lambda tsk: tsk.f_value,
-                                                    reverse=True),
-                                             None)  # не должны попасть сюда. т.к. tasks[] не пустой
-                task_to_derieve = task_with_max_f_value
+            try:
+                print('\n\nРешаем ветку 2')
+                child2_solution = branch2.run()
+            except (NoPivotalSolutionExists, NoOptimalSolutionExists) as e:
+                print(e)
+                child2_solution = None
 
+            # обе ветки решились
+            if child1_solution is not None and child2_solution is not None:
+                if child1_solution['F'] > child2_solution['F']:
+                    return child1_solution
+                else:
+                    return child2_solution
+
+            # ветка 1 не решилась, 2 - решилась
+            elif child1_solution is None and child2_solution is not None:
+                return child2_solution
+
+            # ветка 1 решилась, 2 - не решилась
+            elif child1_solution is not None and child2_solution is None:
+                return child1_solution
+
+            # обе ветки не решились
             else:
-                # перейти на Ш.7.
-                pass
+                raise NoIntegerSolutionExists()
 
-            # Ш.3. Осуществить ветвление задачи ЗЛП-k . Для этого выбрать нецелочисленную
-            # координату и сформировать ограничения и 2 задачи
-            simplex1, simplex2 = self.derieve(task_to_derieve, non_int_value)
-            task1 = Task(2*k + 1, simplex1)
-            task2 = Task(2*k + 2, simplex1)
-
-            self.tasks.insert(task1.k, task1)
-            self.tasks.insert(task2.k, task2)
-
-
-
-            print('asda')
+        else:
+            print('Решение целочисленное. Ветка закончена')
+            return parent_solution
 
     # e.g.: x3 = 2.5
-    def derieve(self, task: Task, non_int_value: dict) -> (Simplexx, Simplexx):
-        # e.g: x3
-        x_key = next(iter(non_int_value.keys()))
+    # FIXME return BnB
+    @staticmethod
+    def split(simplex: Simplexx, non_int_x: dict) -> 'BranchAndBound, BranchAndBound':
+        # { x_3: 5.5 } -> (x_3, 5, 6)
+        def split_x_value(non_int_kv_pair: dict) -> (str, int, int):
+            key = next(iter(non_int_kv_pair.keys()))
+            value = non_int_kv_pair[key]
+            return key, int(value), int(value) + 1
 
-        # ЗЛП-1, x <= non_int
+        x_key, x_less_value, x_greater_value = split_x_value(non_int_x)
+
+        # x <= non_int
         # e.g: x3 <= 2
-        x_less = int(next(iter(non_int_value.values())))
-        simplex1 = self.create_simplex_with_additional_bound(task, x_key, x_less, Sign.PLUS)
+        simplex1 = BranchAndBound.create_simplex_with_additional_bound(simplex, x_key, x_less_value, Sign.PLUS)
+        bnb1 = BranchAndBound(simplex1.matr, simplex1.b, simplex1.lambdas, simplex1.condition)
 
-        # ЗЛП-2, x >= non_int + 1
-        # e.g: x3 >= 3 <-> -x3 <= -3 (то же самое, но со знаком минус)
-        x_greater = int(next(iter(non_int_value.values()))) + 1
-        simplex2 = self.create_simplex_with_additional_bound(task, x_key, x_greater, Sign.MINUS)
-
-        return simplex1, simplex2
+        # x >= non_int + 1
+        # e.g: x3 >= 3 <-(то же самое, но со знаком минус)-> -x3 <= -3
+        simplex2 = BranchAndBound.create_simplex_with_additional_bound(simplex, x_key, x_greater_value, Sign.MINUS)
+        bnb2 = BranchAndBound(simplex2.matr, simplex2.b, simplex2.lambdas, simplex2.condition)
+        return bnb1, bnb2
 
     # добавляем к текущей задаче новое ограничение "x_3 <= 5" в виде
     # дополнительой строки матрицы A: [0, 0, 0, 1], где 1 отвечает за x_3
     # и дополнительной строки столбца b: [5]
-    def create_simplex_with_additional_bound(self, task: Task,
+    @staticmethod
+    def create_simplex_with_additional_bound(simplex: Simplexx,
                                              new_bound_key: str,
                                              new_bound_value: int,
                                              new_bound_sign: Sign) -> Simplexx:
@@ -128,7 +123,7 @@ class BranchAndBound:
         # e.g: x_3 -> "x_" + "3" -> 3
         new_bound_column = int(new_bound_key.split('_')[1])
 
-        matr_columns = task.simplex.matr.shape[0]
+        matr_columns = simplex.matr.shape[0]
         additional_a_row = [0] * matr_columns
         if new_bound_sign is Sign.PLUS:
             # нумерация x_i идет с единицы
@@ -139,20 +134,20 @@ class BranchAndBound:
         additional_a_row = np.array(additional_a_row)
 
         # дпоисываем строку в низ матрицы А
-        curr_a = task.simplex.matr
+        curr_a = simplex.matr
         new_a = np.vstack((curr_a, additional_a_row))
 
-        additinal_b_row = None
+        additional_b_row = None
         if new_bound_sign is Sign.PLUS:
-            additinal_b_row = np.array([new_bound_value])
+            additional_b_row = np.array([new_bound_value])
         else:
-            additinal_b_row = np.array([-1 * new_bound_value])
+            additional_b_row = np.array([-1 * new_bound_value])
 
         # дописываем значение ограничения в низ столбца b
-        curr_b = task.simplex.b
-        new_b = np.vstack((curr_b, additinal_b_row))
+        curr_b = simplex.b
+        new_b = np.vstack((curr_b, additional_b_row))
 
-        return Simplexx(new_a, new_b, task.simplex.lambdas, task.simplex.condition)
+        return Simplexx(new_a, new_b, simplex.lambdas, simplex.condition)
 
 
 if __name__ == '__main__':
@@ -162,7 +157,5 @@ if __name__ == '__main__':
                   [20]])
     lambdas = np.array([[12, -1]])
 
-    # when
-    bnb = BranchAndBound(a, b, lambdas, Condition.MAX)
-    primary_solution = bnb.run()
-    print(primary_solution)
+    solution = BranchAndBound(a, b, lambdas, Condition.MAX).run()
+    print(f'\n\nИтоговое решение: {solution}')
