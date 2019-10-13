@@ -6,8 +6,8 @@ from copy import deepcopy
 
 
 class NoPivotalSolutionExists(Exception):
-    def __init__(self):
-        super().__init__('Допустимого(опорного) решения не существует')
+    def __init__(self, msg: str = 'Допустимого(опорного) решения не существует'):
+        super().__init__(msg)
 
 
 class NoOptimalSolutionExists(Exception):
@@ -229,21 +229,21 @@ class Simplexx:
 
     @property
     def best_solution(self) -> dict:
-        def is_all_poisitive_solution(sol: dict) -> bool:
+        # положительность x'ов - это одно из условий задачи
+        def all_xs_are_positive(sol: dict) -> bool:
             for x in sol.keys():
                 if x != 'F' and sol[x] < 0:
                     return False
             return True
 
-        # последнее решение, при котором все x положительные. положительность x'ов - это одно из условий задачи
+        # последнее решение, при котором все x положительные.
         i = len(self.solutions) - 1
         while i >= 0:
             # идем от последнего к первому решению
-            if is_all_poisitive_solution(self.solutions[i]):
+            if all_xs_are_positive(self.solutions[i]):
                 return self.solutions[i]
             i -= 1
-        # если все плохие, возвращаем хоть какое-то
-        return self.solutions[0]
+        raise NoPivotalSolutionExists('Нет решения с положительными "x"')
 
     def add_solution(self):
         variables = self.get_variables_mapping()
