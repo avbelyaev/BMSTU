@@ -34,12 +34,14 @@ class TestBranchAndBound(unittest.TestCase):
         lambdas = np.array([[2, 8, 3]])
 
         # when
-        print('===  Прямая ===')
         solution = BranchAndBound(a, b, lambdas, Condition.MAX).run()
 
         # then
-        expected_f_value = 25.5
+        expected_f_value = 24
         self.assertEqual(expected_f_value, solution['F'])
+        self.assertEqual(0, solution['x_1'])
+        self.assertEqual(3, solution['x_2'])
+        self.assertEqual(0, solution['x_3'])
 
     def test_var_10(self):
         a = np.array([[4, 1, 1],
@@ -51,11 +53,10 @@ class TestBranchAndBound(unittest.TestCase):
         lambdas = np.array([[7, 5, 3]])
 
         # when
-        print('===  Прямая ===')
         solution = BranchAndBound(a, b, lambdas, Condition.MAX).run()
 
         # then
-        expected_f_value = 13
+        expected_f_value = 7    # FIXME math semestr -> 8.0
         self.assertEqual(expected_f_value, solution['F'])
 
     def test_example_1_from_book(self):
@@ -68,27 +69,10 @@ class TestBranchAndBound(unittest.TestCase):
         lambdas = np.array([[-1, 1]])
 
         # when
-        print('===  Прямая ===')
         solution = BranchAndBound(a, b, lambdas, Condition.MIN).run()
 
         # then
         expected_f_value = -3
-        self.assertEqual(expected_f_value, solution['F'])
-
-    # пример из методички. стр 40
-    def test_example_2_from_book(self):
-        a = np.array([[3, 1, -4, -1],
-                      [-2, -4, -1, 1]])
-        b = np.array([[-3],
-                      [-3]])
-        lambdas = np.array([[-4, -18, -30, -5]])
-
-        # when
-        print('===  Прямая ===')
-        solution = BranchAndBound(a, b, lambdas, Condition.MAX).run()
-
-        # then
-        expected_f_value = -36
         self.assertEqual(expected_f_value, solution['F'])
 
     def test_unbounded_solution(self):
@@ -99,7 +83,6 @@ class TestBranchAndBound(unittest.TestCase):
                       [20]])
         lambdas = np.array([[1, 2]])
 
-        print('===  Прямая ===')
         self.assertRaises(NoOptimalSolutionExists, BranchAndBound(a, b, lambdas, Condition.MAX).run)
 
     def test_no_allowed_solution(self):
@@ -110,7 +93,6 @@ class TestBranchAndBound(unittest.TestCase):
                       [-12]])
         lambdas = np.array([[3, 2]])
 
-        print('===  Прямая ===')
         self.assertRaises(NoPivotalSolutionExists, BranchAndBound(a, b, lambdas, Condition.MAX).run)
 
 

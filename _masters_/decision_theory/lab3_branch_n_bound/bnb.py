@@ -29,15 +29,15 @@ class BranchAndBound:
         self.lambdas = lambdas
         self.condition = condition
 
-    @staticmethod
-    def first_non_integer_solution(solution: dict) -> Optional[dict]:
-        is_int = lambda val: isinstance(val, int) or (isinstance(val, float) and val.is_integer())
+    def first_non_integer_solution(self, solution: dict) -> Optional[dict]:
+        is_int = lambda val: isinstance(val, int) \
+                             or (isinstance(val, float) and val.is_integer())
 
+        # нам важны только те x_i, которые участвуют в функции
+        valuable_xs = [f'x_{i + 1}' for i in range(self.lambdas.shape[1])]
         for x_coord in solution.keys():
-            if x_coord in ['x_1', 'x_2', 'x_3']:
-                # FIXME берем только те 'x', которые есть в F. т.е. если len(lambdas)=3 => [x1,x2,x3]
-                if not is_int(solution[x_coord]):
-                    return {x_coord: solution[x_coord]}
+            if x_coord in valuable_xs and not is_int(solution[x_coord]):
+                return {x_coord: solution[x_coord]}
         return None
 
     @override
@@ -46,7 +46,7 @@ class BranchAndBound:
         parent_solution = parent_simplex.run()
         print(f'Решение: {parent_solution}')
 
-        non_int_value = BranchAndBound.first_non_integer_solution(parent_solution)
+        non_int_value = self.first_non_integer_solution(parent_solution)
         if non_int_value is not None:
             print(f'Нецелочисленное решение: {non_int_value}. Разветвляем')
             branch1, branch2 = BranchAndBound.split(parent_simplex, non_int_value)
@@ -67,10 +67,20 @@ class BranchAndBound:
 
             # обе ветки решились
             if child1_solution is not None and child2_solution is not None:
-                if child1_solution['F'] > child2_solution['F']:
-                    return child1_solution
+                if self.condition is Condition.MAX:
+                    if child1_solution['F'] > child2_solution['F']:
+                        return child1_solution
+                    else:
+                        return child2_solution
+
+                elif self.condition is Condition.MIN:
+                    if child1_solution['F'] < child2_solution['F']:
+                        return child1_solution
+                    else:
+                        return child2_solution
+
                 else:
-                    return child2_solution
+                    raise ValueError('incompatible condition')
 
             # ветка 1 не решилась, 2 - решилась
             elif child1_solution is None and child2_solution is not None:
@@ -89,7 +99,6 @@ class BranchAndBound:
             return parent_solution
 
     # e.g.: x3 = 2.5
-    # FIXME return BnB
     @staticmethod
     def split(simplex: Simplexx, non_int_x: dict) -> 'BranchAndBound, BranchAndBound':
         # { x_3: 5.5 } -> (x_3, 5, 6)
@@ -123,7 +132,7 @@ class BranchAndBound:
         # e.g: x_3 -> "x_" + "3" -> 3
         new_bound_column = int(new_bound_key.split('_')[1])
 
-        matr_columns = simplex.matr.shape[0]
+        matr_columns = simplex.matr.shape[1]
         additional_a_row = [0] * matr_columns
         if new_bound_sign is Sign.PLUS:
             # нумерация x_i идет с единицы
