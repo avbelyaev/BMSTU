@@ -21,6 +21,7 @@ def override(f):
     return f
 
 
+# FIXME try inherit from Simplex
 class BranchAndBound:
     def __init__(self, a: np.ndarray, b: np.ndarray, lambdas: np.ndarray, condition: Condition):
         assert condition in [Condition.MIN, Condition.MAX]
@@ -42,7 +43,7 @@ class BranchAndBound:
         return None
 
     @override
-    def run(self):
+    def run(self) -> dict:
         parent_simplex = Simplexx(self.matr, self.b, self.lambdas, self.condition)
         parent_solution = parent_simplex.run()
         print(f'Решение: {parent_solution}')
