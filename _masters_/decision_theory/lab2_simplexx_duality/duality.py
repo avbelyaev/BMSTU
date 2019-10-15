@@ -20,19 +20,18 @@ class DualSimplexx(Simplexx):
         # - транспонировать A, B, C.
         # - поменять знаки >= -> <= путем домножения левой и правой части на -1
         # - инвертировать условие MAX -> MIN
+        assert condition in [Condition.MIN, Condition.MAX]
         if condition is Condition.MAX:
             a_t = -1 * np.transpose(a)
             lambdas_t = np.transpose(b)
             b_t = -1 * np.transpose(lambdas)
             cond = Condition.MIN
 
-        elif condition is Condition.MIN:
+        else:
             a_t = -1 * np.transpose(a)
             lambdas_t = -1 * np.transpose(b)
             b_t = np.transpose(lambdas)
             cond = Condition.MAX
-        else:
-            raise ValueError('Неверное условие!')
 
         super().__init__(a_t, b_t, lambdas_t, cond)
 

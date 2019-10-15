@@ -23,6 +23,7 @@ def override(f):
 
 class BranchAndBound:
     def __init__(self, a: np.ndarray, b: np.ndarray, lambdas: np.ndarray, condition: Condition):
+        assert condition in [Condition.MIN, Condition.MAX]
         # super().__init__(a, b, lambdas, condition)
         self.matr = a
         self.b = b
@@ -73,14 +74,11 @@ class BranchAndBound:
                     else:
                         return child2_solution
 
-                elif self.condition is Condition.MIN:
+                else:
                     if child1_solution['F'] < child2_solution['F']:
                         return child1_solution
                     else:
                         return child2_solution
-
-                else:
-                    raise ValueError('incompatible condition')
 
             # ветка 1 не решилась, 2 - решилась
             elif child1_solution is None and child2_solution is not None:
@@ -98,7 +96,6 @@ class BranchAndBound:
             print('Решение целочисленное. Ветка закончена')
             return parent_solution
 
-    # e.g.: x3 = 2.5
     @staticmethod
     def split(simplex: Simplexx, non_int_x: dict) -> 'BranchAndBound, BranchAndBound':
         # { x_3: 5.5 } -> (x_3, 5, 6)
@@ -110,36 +107,33 @@ class BranchAndBound:
         x_key, x_less_value, x_greater_value = split_x_value(non_int_x)
 
         # x <= non_int
-        # e.g: x3 <= 2
+        # e.g: x3 <= 5
         simplex1 = BranchAndBound.create_simplex_with_additional_bound(simplex, x_key, x_less_value, Sign.PLUS)
         bnb1 = BranchAndBound(simplex1.matr, simplex1.b, simplex1.lambdas, simplex1.condition)
 
         # x >= non_int + 1
-        # e.g: x3 >= 3 <-(то же самое, но со знаком минус)-> -x3 <= -3
+        # e.g: x3 >= 6 <-(то же самое, но со знаком минус)-> -x3 <= -6
         simplex2 = BranchAndBound.create_simplex_with_additional_bound(simplex, x_key, x_greater_value, Sign.MINUS)
         bnb2 = BranchAndBound(simplex2.matr, simplex2.b, simplex2.lambdas, simplex2.condition)
         return bnb1, bnb2
 
     # добавляем к текущей задаче новое ограничение "x_3 <= 5" в виде
-    # дополнительой строки матрицы A: [0, 0, 0, 1], где 1 отвечает за x_3
-    # и дополнительной строки столбца b: [5]
+    # - дополнительой строки матрицы A: [0, 0, 1], где 1 отвечает за x_3
+    # - и дополнительной строки столбца b: [5]
     @staticmethod
     def create_simplex_with_additional_bound(simplex: Simplexx,
                                              new_bound_key: str,
                                              new_bound_value: int,
                                              new_bound_sign: Sign) -> Simplexx:
-        # находим колонку, которая соответстует нецелому "x_i"
-        # e.g: x_3 -> "x_" + "3" -> 3
-        new_bound_column = int(new_bound_key.split('_')[1])
+        # находим колонку, которая соответстует нецелому "x_i". нумерация x - с единицы
+        new_bound_column = int(new_bound_key.split('_')[1]) - 1
 
         matr_columns = simplex.matr.shape[1]
         additional_a_row = [0] * matr_columns
         if new_bound_sign is Sign.PLUS:
-            # нумерация x_i идет с единицы
-            additional_a_row[new_bound_column - 1] = 1
+            additional_a_row[new_bound_column] = 1
         else:
-            # нумерация x_i идет с единицы
-            additional_a_row[new_bound_column - 1] = -1
+            additional_a_row[new_bound_column] = -1
         additional_a_row = np.array(additional_a_row)
 
         # дпоисываем строку в низ матрицы А

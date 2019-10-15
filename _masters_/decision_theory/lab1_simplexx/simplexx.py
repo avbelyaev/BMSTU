@@ -29,6 +29,7 @@ class Simplexx:
         :param lambdas: aka C
         :param condition: min or max
         """
+        assert condition in [Condition.MIN, Condition.MAX]
         self.matr = a
         self.b = b
         self.lambdas = lambdas
@@ -67,10 +68,8 @@ class Simplexx:
         # если надо найти MIN, то
         # - строку лямбд (aka С) домножаем на -1
         # - ответ (значение F в конце решения) оставляем как есть
-        elif self.condition is Condition.MIN:
-            self.lambdas = -1 * self.lambdas
         else:
-            raise ValueError('Неверное условие')
+            self.lambdas = -1 * self.lambdas
 
         # добавляем 0 в начало строки лямбд
         pos = 0
@@ -259,10 +258,8 @@ class Simplexx:
         #  см заметики при составлении таблицы
         if self.condition is Condition.MIN:
             return f_value
-        elif self.condition is Condition.MAX:
-            return -1 * f_value
         else:
-            raise ValueError('Неверное условие')
+            return -1 * f_value
 
     def get_variables_mapping(self) -> dict:
         res = dict()
