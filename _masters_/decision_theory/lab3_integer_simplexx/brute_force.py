@@ -18,21 +18,18 @@ class BruteForce(Simplexx):
 
     @override
     def run(self) -> dict:
-        #
+        # количество x, присутствующих в F == кол-ву лямбд
         number_of_considered_xs = self.lambdas.shape[1]
         ranges_to_brute = []
         for x in range(number_of_considered_xs):
             range_from, range_to = self.range_to_brute(x)
-            # TODO remove bfrange -> simpify
-            brute_range = self.BFRange(x, range_from, range_to)
+            print(f'x_{x + 1}: диапазон перебора [{range_from}..{range_to}]')
 
-            print(brute_range)
-            ranges_to_brute.append(brute_range)
+            range_list = list(range(range_from, range_to+ 1))
+            ranges_to_brute.append(range_list)
 
-        # оставлем только диапазоны варьирования x в виде списков
-        ranges_only = [brute_range.as_list for brute_range in ranges_to_brute]
-        # кобираем декартово произведение. получаем набор x-векторов
-        cartesian_products = list(itertools.product(*ranges_only))
+        # собираем декартово произведение. получаем набор x-векторов
+        cartesian_products = list(itertools.product(*ranges_to_brute))
 
         # оставляем только те решения (x-векторы), которые удовлетворяют условию
         applicable_x_vectors = list(filter(lambda solution: self.is_applicable(solution),
@@ -107,24 +104,6 @@ class BruteForce(Simplexx):
     @property
     def matrix_cols(self):
         return self.matr.shape[1]
-
-    # FIXME not used
-    class BFRange:
-        def __init__(self, x_id: int, range_from: int, range_to: int):
-            self.x_id = x_id
-            self.x = f'x_{x_id + 1}'
-            self.rng_from = range_from
-            self.rng_to = range_to
-
-        @property
-        def as_list(self) -> list:
-            return list(range(self.rng_from, self.rng_to + 1))
-
-        def __repr__(self):
-            return self.__str__()
-
-        def __str__(self):
-            return f'{self.x}: диапазон перебора [{self.rng_from}..{self.rng_to}]'
 
 
 if __name__ == '__main__':
