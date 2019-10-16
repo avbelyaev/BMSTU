@@ -36,41 +36,6 @@ services:
     depends_on:
       - xpostgres
 
- # xsqlserver:
- #   # creds: sa/Pa55w0rd
- #   image: mcr.microsoft.com/mssql/server:2019-CTP3.2-ubuntu
- #   environment:
- #     ACCEPT_EULA: Y
- #     SA_PASSWORD: Pa55w0rd
- #   ports:
- #     - 1433:1433
- #   # volume not supported on Mac
-
- # xoracle:
- #   # creds: system/oracle
- #   # SID seems to be case sensitive: "xe"
- #   # port: 1521
- #   image: quay.io/maksymbilenko/oracle-xe-11g
- #   environment:
- #     ORACLE_PWD: Pa55w0rd
- #   shm_size: '1gb'
- #   ports:
- #     - 1521:1521
- #     - 8080:8080
- #   volumes:
- #     - ./oracle-data:/u01/app/oracle
-
-#  xsybase:
-##  это дерьмо весит 2+ гб!
-#    # creds: sa/myPassword
-#    image: datagrip/sybase
-#    environment:
-#      SYBASE_DB: ics
-#      SYBASE_USER: ics
-#      SYBASE_PASSWORD: ics
-#    ports:
-#      - 5000:5000
-
 networks:
   postgres-net:
     driver: bridge
