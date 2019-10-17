@@ -1,95 +1,3 @@
--- noinspection SqlNoDataSourceInspectionForFile
-
--- ### 3. Создать tablespace
--- 1. Создать tablespace “myts1” (myts2) в директории MyDB1 (MyDB2) с пользователем postgres
-/*
-- в контейнере:
-mkdir -p /home/space1 && chown postgres /home/space1
-mkdir -p /home/space2 && chown postgres /home/space2
-*/
--- - по отдельности запускаем:
-CREATE TABLESPACE myts1 OWNER ics LOCATION '/home/space1';
-CREATE TABLESPACE myts2 OWNER ics LOCATION '/home/space2';
-
-
-
--- ### 4. Создать БД
--- 1. Создать БД mydb
-DROP DATABASE IF EXISTS mydb;
-CREATE DATABASE mydb
-    WITH
-    OWNER = ics
-    ENCODING = 'UTF8'
-    TABLESPACE = myts1;
-
--- 2. Создать БД mytest
-DROP DATABASE IF EXISTS mytest;
-CREATE DATABASE mytest
-    WITH
-    OWNER = ics
-    ENCODING = 'UTF8'
-    TABLESPACE = myts2;
-
--- 3. Уничтожить БД mytest
-DROP DATABASE IF EXISTS mytest;
-
-
-
--- ### 5. Создать схемы
--- - 1. myschem1 для mydb1
-CREATE SCHEMA IF NOT EXISTS myschem1;
-
--- - 1. myschem2 для mydb1
-CREATE SCHEMA IF NOT EXISTS myschem2;
-
--- - 3. Определитб текущую схему
-select current_schema();
--- или
-SHOW search_path;
-
--- - 4. Сделать myschem2 текущей
-SET search_path TO myschem2;
-SHOW search_path;
-
-
-
--- ### 6. Создать последовательность
--- переключаемся на схему 1
-SET search_path TO myschem1;
-
--- 1. MySq c шагом 1
-CREATE SEQUENCE IF NOT EXISTS mysq1
-    INCREMENT 1
-    START 1;
-
-
--- ### 7. Создать Тип
--- 1.Создать новый тип с описанием работника
-CREATE TYPE fio AS
-(
-    name    character(40),
-    soname  character(40),
-    family  character(40),
-    gender  character(1)
-);
-
-
-
--- ### 8. Создать домен
-/*
-In PostgreSQL, a domain is a data type with optional constraints e.g.,
-NOT NULL, CHECK etc. A domain has a unique name within the schema scope.
-Domains are useful for centralizing management of fields with the common constraints.
-*/
-CREATE DOMAIN mydom AS
-    INT CHECK (value < 7);
-
-
-
--- ### 9. Добавить расширение pg_freespacemap
-CREATE EXTENSION pg_freespacemap;
-
-
 
 -- ### 10.Таблицы
 -- - a. Создать в схеме myschem1 таблицы согласно перечисленным ниже требованиям
@@ -116,7 +24,6 @@ DROP TABLE IF EXISTS tit_out;
 DROP TABLE IF EXISTS tit_in;
 DROP TABLE IF EXISTS employers;
 DROP TABLE IF EXISTS nomenclatura;
-DROP TABLE IF EXISTS instruction;
 
 
 /*
@@ -264,7 +171,6 @@ CREATE TABLE nom_out
     sUNIT                char(1),
     nPRICE               numeric(12, 2),
     siPROPIS             SMALLINT,
-    TIT_ID               numeric(10),
     sTCHF                varchar(200),
     ID_TIT               INT,    --nullable
     ID_NOM               INT,    --nullable
@@ -288,18 +194,6 @@ CREATE TABLE head
 	PRIMARY KEY (ID_EMP)
 )
 INHERITS (employers);
-
--- - Таблица INSTRUCTION
---     1. поле для текстовой информации inst
---     2. поле ins поле типа tsvector
---
--- the tsvector data type, where ts stands for "text search");
--- to_tsquery for querying the vector for occurrences of certain words or phrases.
-CREATE TABLE instruction
-(
-	inst                text,
-	ins                 tsvector
-);
 
 
 -- - Временная таблица Temp EMPLOYERS
@@ -500,7 +394,6 @@ where ID_TIT = 2;
 
 
 -- ### Удаление
-
 -- 1. Удалить товарные накладные с минимальной и максимальной стоимостью спецификации.
 select  * from spec_prices;
 
@@ -547,12 +440,129 @@ where ID_TIT in (
 
 -- ### 12. Посмотреть план запросов
 -- Для Select из п.11 первое задание
--- добавляем explain к запросу
+-- TODO explain
+
 
 
 -- ### 13.Создать функцию
--- 1. Функцию, которая случайным образом создает требования
--- требования == title_in
-
+-- 1. Функцию, которая случайным образом создает требования (aka tit_in).
+CREATE OR REPLACE FUNCTION random_tit_in()
+  RETURNS void AS
+$func$
+BEGIN
+   EXECUTE format(
+       'INSERT INTO tit_in (EMP_ID, sNOTE, dWORKUP) VALUES
+        (%s, ''%s'', CURRENT_TIMESTAMP)',
+       floor(random() * 3 + 1)::int,
+       md5(random()::text)
+       );
+END
+$func$ LANGUAGE plpgsql;
 
 -- 2. Создать функцию, которая увеличивает стоимость номенклатуры на 30 процентов.
+CREATE OR REPLACE FUNCTION increase_nom_in_price_by_30_percent(id int)
+  RETURNS void AS
+$func$
+BEGIN
+   EXECUTE format(
+       'UPDATE nom_in
+        SET nQUANT = 1.3 * nQUANT
+        WHERE id_cl = %s', id);
+END
+$func$ LANGUAGE plpgsql;
+
+
+
+-- ### 14.Создать триггер
+-- PostgreSQL only allows the execution of a user-defined function for the triggered action.
+-- добавляем в tit_out/nom_out данные
+insert into tit_out(dDATE, sSUBSCR_APT, dWORK_UP) values
+(CURRENT_DATE, 'Выгрузка 228', CURRENT_TIMESTAMP),
+(CURRENT_DATE, 'Выгрузка 322 пункта 1337', CURRENT_TIMESTAMP);
+
+insert into nom_out(ID_TIT, ID_NOM, nPRICE, sTCHF) values
+(1, 1, 350, 'арбидолы'),
+(1, 2, 59, 'смекты'),
+(2, 3, 240, 'нурофены');
+
+-- Триггер реагирует на удаление строки из TIT_OUT.
+-- Он должен удаляющие все проассоциированные с этой строкой строки одной транзакцией.
+CREATE OR REPLACE FUNCTION rm_nom_out() RETURNS trigger AS
+$$BEGIN
+    delete from nom_out
+    where ID_TIT = OLD.id;
+    return OLD;
+END;$$ LANGUAGE plpgsql;
+
+drop trigger if exists trigger_remove_associated on tit_out;
+
+create trigger trigger_remove_associated
+before delete on tit_out
+for each row execute procedure rm_nom_out();
+
+-- delete from tit_out
+-- where id = 2;
+
+
+
+-- ### 15.Создать Правило
+-- Before the query is optimized, a rule can either replace the query with a different one or add additional queries.
+-- These are then planned and executed instead of or together with the original query.
+
+--подготавливаем данные
+update nom_out
+set tit_id = 1
+where tit_id is null;
+
+-- Который реагирует на оператор insert с TIT_OUT и удаляющие все проасоциированые с этой строкой строки одной транзакцией.
+-- TODO wtf is that
+-- create rule rule_remove_associated
+-- as on delete to tit_out
+-- do instead blablabla
+
+
+
+-- ### 16. FTS
+-- Таблица INSTRUCTION
+-- 1. C полем для текстовой информации inst и с поле ins поле типа tsvector
+-- 2. Построить, поисковые вектора для всех строк таблицы Instruction
+-- 3. Построить веса
+
+-- the tsvector data type, where ts stands for "text search");
+-- to_tsquery for querying the vector for occurrences of certain words or phrases.
+DROP TABLE IF EXISTS instruction;
+
+CREATE TABLE instruction
+(
+	inst                text,
+	ins                 tsvector
+);
+
+insert into instruction(inst, ins) values
+('i1', to_tsvector(null)),
+('i2', to_tsvector(null)),
+('i3', to_tsvector(null));
+
+select *
+from instruction;
+
+UPDATE instruction SET ins =
+    setweight(to_tsvector('Joker'), 'A')    ||
+    setweight(to_tsvector('joker batman fleck dark knight nolan bale'), 'B')  ||
+    setweight(to_tsvector(
+    'I used to think my life was a tragedy, but now I realize it''s a comedy '))
+where inst = 'i1';
+
+UPDATE instruction SET ins =
+    setweight(to_tsvector('Joker'), 'B')    ||
+    setweight(to_tsvector(
+    'I used to think my life was a tragedy, but now I realize it''s a comedy ' ||
+     'All I have, are negative thoughts ' ||
+      'The worst part of having a mental illness is people expect you to behave as if you don''t'), 'D')
+where inst = 'i2';
+
+UPDATE instruction SET ins =
+    setweight(to_tsvector('Joker'), 'C')    ||
+    setweight(to_tsvector(
+      'The worst part of having a mental illness is people expect you to behave as if you don''t'), 'D')
+where inst = 'i3';
