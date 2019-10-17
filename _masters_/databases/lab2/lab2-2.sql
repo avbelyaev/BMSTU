@@ -105,7 +105,8 @@ CREATE EXTENSION pg_freespacemap;
 |             | nom_in 1    |
 -----------------------------
 */
-drop view if exists spec_report;
+drop view if exists spec_overall_report;
+drop view if exists spec_prices;
 ALTER SEQUENCE mysq1 RESTART WITH 1;
 
 DROP TABLE IF EXISTS head;
@@ -239,7 +240,8 @@ CREATE TABLE nom_in
 
     CONSTRAINT fk_tit_in
         FOREIGN KEY (ID_TIT)
-        REFERENCES tit_in (ID_TIT),
+        REFERENCES tit_in (ID_TIT)
+        ON DELETE set null,
     CONSTRAINT fk_nomenclatura
         FOREIGN KEY (ID_NOM)
         REFERENCES nomenclatura (ID_DRG)
@@ -345,7 +347,8 @@ INSERT INTO employers(SName, SPosition, FIO1, aSTelephone) VALUES
 INSERT INTO nomenclatura(sCODE, DRUG_NAME) VALUES
 ('12', 'арбидол'),
 ('23', 'смекта'),
-('34', 'нурофен');
+('34', 'нурофен'),
+('56', 'простамол');
 
 
 --3. Добавьте накладную без спецификации.
@@ -354,17 +357,17 @@ INSERT INTO nomenclatura(sCODE, DRUG_NAME) VALUES
 insert into tit_in(EMP_ID, sNOTE, dWORKUP) values
 (1, 'Заказ для поликлиники #1488 г. Москва', CURRENT_TIMESTAMP),
 (1, 'Заказ поликлиники МГТУ им бэтмана', CURRENT_TIMESTAMP),
-(1, 'Пустой заказ без спецификации', CURRENT_TIMESTAMP);
-
+(1, 'Пустой заказ без спецификации', CURRENT_TIMESTAMP),
+(1, 'Заказ для МГУ', CURRENT_TIMESTAMP);
 
 --4. Добавьте номенклатуру в спецификацию.
 -- добваляем единицы номенклатуры (как спецификацию) в накладную выше
 -- delete from nom_in;
 insert into nom_in(nQUANTITY, ID_TIT, ID_NOM, sTCHF, nQUANT) values
-(20, 1, 1, '20 арбидолов для поликлиники 1488', 399),
-(300, 1, 2, '300 смект по 89 руб, в пк 1488 все очень плохо', 89),
-(500, 2, 3, 'дешевые нурофены для лучшего технического во вселенной', 39);
-
+(20, 1, 1, 'арбидолы для поликлиники', 399),
+(300, 1, 2, 'смекты по 89 руб', 89),
+(500, 2, 3, 'дешевые нурофены для лучшего технического', 39),
+(20, 4, 4, 'для вмк', 299);
 
 --5. Добавьте текст инструкции для обоих записей
 -- инструкции есть только в номенклатуре
@@ -411,41 +414,145 @@ where 1 = array_position(aSTelephone, '8-800-555-3535');
 --2. Написать оператор Select который формирует отчет обо всех накладных и спецификации,
 -- относящиеся к ним. (Шапка должна включать номер товарной накладной, дату формирования
 -- и название номенклатуры, количество, цену.) Создать Vew
-create view spec_report as
+create view spec_overall_report as
 select t.ID_TIT, t.sNOTE, t.dWORKUP, n.DRUG_NAME, ni.nQUANTITY, ni.nQUANT
 from tit_in t
 left join nom_in ni on t.ID_TIT = ni.ID_TIT
 left join nomenclatura n on ni.ID_NOM = n.ID_DRG;
 
---3. Написать оператор Select который формирует накладные, имеющие спецификаци_и.
+--3. Написать оператор Select который формирует отчет обо всех накладных, не имеющих спецификациии.
 select t.ID_TIT, t.sNOTE
 from tit_in t
 where t.ID_TIT in (select ni.ID_TIT from nom_in ni);
 
---4. Написать оператор Select который формирует накладные, имеющих спецификаци_ю.
+--4. Написать оператор Select который формирует отчет обо всех накладных, имеющих спецификацию.
 select t.ID_TIT, t.sNOTE
 from tit_in t
 where t.ID_TIT not in (select ni.ID_TIT from nom_in ni);
 
---5. Написать оператор Select который формирует спецификации.
-select
---6. Написать оператор Select который формирует препараты, имеющие максимальную стоимость.
---7. Написать оператор Select который формирует накладными .
---отчет обо всех накладных, не отчет обо всех накладных, отчет с суммарной стоимостью
---отчет со списком накладных, отчет с товарными
---отчет о средней стоимости
---8. Написать оператор Select который формирует номенклатуры накладных на внутреннее перемещение.
+--5. Написать оператор Select который формирует отчет с суммарной стоимостью спецификации.
+-- формируем спецификации для заказа 2
+create view spec_prices as
+select t.sNOTE, t.ID_TIT, sum(ni.nQUANTITY * ni.nQUANT) as price
+from nom_in ni
+join tit_in t on ni.ID_TIT = t.ID_TIT
+group by t.sNOTE, t.ID_TIT;
+
+--6. Написать оператор Select который формирует отчет со списком накладных, имеющих максимальную стоимость
+select * from spec_prices
+order by price DESC
+limit 1;
+
+--7. Написать оператор Select который формирует отчет с товарными накладными
+select * from  nom_in;
+
+--8. Написать оператор Select который формирует отчет о средней стоимости номенклатуры накладных на внутреннее перемещение.
+select avg(price) from spec_prices;
+
 --9. Написать оператор Select который формирует отчет о средней стоимости номенклатуры внутри каждой товарной накладной.
---10. Написать оператор Select который формирует отчет с перечнем накладных на имеющих минимальную и минимальную стоимость спецификации
+select t.sNOTE, avg(ni.nQUANTITY * ni.nQUANT) as price
+from nom_in ni
+join tit_in t on ni.ID_TIT = t.ID_TIT
+group by t.sNOTE;
+
+--10. Написать оператор Select который формирует отчет с перечнем накладных имеющих максимальную
+select t.sNOTE, sum(ni.nQUANTITY * ni.nQUANT) as price
+from nom_in ni
+join tit_in t on ni.ID_TIT = t.ID_TIT
+group by t.sNOTE
+order by price DESC
+limit 1;
+-- и минимальную стоимость спецификации
+select t.sNOTE, sum(ni.nQUANTITY * ni.nQUANT) as price
+from nom_in ni
+join tit_in t on ni.ID_TIT = t.ID_TIT
+group by t.sNOTE
+order by price ASC
+limit 1;
 
 
-### 12. Посмотреть план запросов
-Для Select из п.11 первое задание
+-- ### Updata (Изменения значения строк)
+-- 1. Изменить отчество в столбец FIO1 в первой записи
+update employers
+set fio1.family = 'wozniak'
+where ID_EMP = 1;
+
+-- 2. Увеличить цену каждой номенклатуры на десять процентов.
+update nom_in
+set nQUANT = nQUANT * 1.1;
+
+-- 3. Переместить одну номенклатурную единицу из одной товарной накладной в другую.
+-- Товарные накладные выбрать по своему усмотрению.
+select * from nom_in;
+update nom_in
+set ID_TIT = 2
+where ID_CL = 1;
+
+-- 4. Поменять спецификации двух произвольных накладных на внутреннее перемещение.
+select * from nom_in;
+update nom_in
+set ID_TIT = 2
+where ID_TIT = 1;
+
+update nom_in
+set ID_TIT = 1
+where ID_TIT = 2;
 
 
-### 13.Создать функцию
+-- ### Удаление
 
-- Функцию, которая случайным образом создает требования
+-- 1. Удалить товарные накладные с минимальной и максимальной стоимостью спецификации.
+select  * from spec_prices;
 
-что такое требования????
-- Создать функцию, которая увеличивает стоимость номенклатуры на 30 процентов.
+delete from tit_in
+where ID_TIT in (
+    select ID_TIT
+    from spec_prices
+    where price in (
+        (select max(price) from spec_prices),
+        (select min(price) from spec_prices)
+    )
+);
+
+
+-- восстанавливаем данные (привязываем номенклатуу к другому заказу)
+update nom_in
+set ID_TIT = 2
+WHERE ID_TIT is null;
+
+
+-- 2. Удалить товарные накладные на сумму большую, чем средняя стоимость.
+delete from tit_in
+where ID_TIT in (
+    select ID_TIT
+    from spec_prices
+    where price > (select avg(price) from spec_prices)
+);
+
+-- 3. Удалить товарные накладные без спецификации.
+delete from tit_in
+where ID_TIT not in (
+    select ID_TIT
+    from nom_in
+);
+
+-- 4. Удалить товарные накладные со спецификацией.
+delete from tit_in
+where ID_TIT in (
+    select ID_TIT
+    from nom_in
+);
+
+
+
+-- ### 12. Посмотреть план запросов
+-- Для Select из п.11 первое задание
+-- добавляем explain к запросу
+
+
+-- ### 13.Создать функцию
+-- 1. Функцию, которая случайным образом создает требования
+-- требования == title_in
+
+
+-- 2. Создать функцию, которая увеличивает стоимость номенклатуры на 30 процентов.
