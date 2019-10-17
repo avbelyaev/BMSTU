@@ -36,6 +36,19 @@ services:
     depends_on:
       - xpostgres
 
+  xpggis:
+    image: mdillon/postgis:10
+    environment:
+      POSTGRES_DB: ics
+      POSTGRES_USER: ics
+      POSTGRES_PASSWORD: ics
+    ports:
+      - 6000:5432
+    volumes:
+      - ./pggis-data:/var/lib/postgresql/data
+    networks:
+      - postgres-net
+
 networks:
   postgres-net:
     driver: bridge
