@@ -546,23 +546,24 @@ insert into instruction(inst, ins) values
 select *
 from instruction;
 
+-- максимальный вес джокера
 UPDATE instruction SET ins =
-    setweight(to_tsvector('Joker'), 'A')    ||
-    setweight(to_tsvector('joker batman fleck dark knight nolan bale'), 'B')  ||
-    setweight(to_tsvector(
-    'I used to think my life was a tragedy, but now I realize it''s a comedy '))
+    setweight(to_tsvector('JOKER'), 'A')
 where inst = 'i1';
 
+-- большой вес джокера
 UPDATE instruction SET ins =
-    setweight(to_tsvector('Joker'), 'B')    ||
-    setweight(to_tsvector(
-    'I used to think my life was a tragedy, but now I realize it''s a comedy ' ||
-     'All I have, are negative thoughts ' ||
-      'The worst part of having a mental illness is people expect you to behave as if you don''t'), 'D')
+setweight(to_tsvector('JoKeR'), 'B')
 where inst = 'i2';
 
+-- минимальный вес джокера, но есть бэтмен
 UPDATE instruction SET ins =
-    setweight(to_tsvector('Joker'), 'C')    ||
-    setweight(to_tsvector(
-      'The worst part of having a mental illness is people expect you to behave as if you don''t'), 'D')
+    setweight(to_tsvector('jOKEr'), 'D')    ||
+    setweight(to_tsvector('joker dark batman knight NOLAN bale'), 'C')
 where inst = 'i3';
+
+-- запрос 'batman & joker' - видим как меняется вес в зависимости от положения бэтмена в строке
+-- запрос 'batman | joker' - наличие 2х слабых вариантов (D+C) перебило 1 сильный (B)
+select inst, ins, ts_rank(ins, to_tsquery('joker | batman')) as rank
+from instruction
+order by rank desc;
