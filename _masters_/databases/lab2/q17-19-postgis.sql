@@ -13,8 +13,10 @@ CREATE DATABASE mygis
     ENCODING = 'UTF8';
 --     TABLESPACE = myts1;
 
+-- переключаемся на БД mygis
+
 -- make sure extension already exists
--- CREATE EXTENSION postgis;
+CREATE EXTENSION postgis;
 
 -- Таблица Rectangle
 --     1. Первичный ключ автоинкрементальный (Serial).
@@ -27,8 +29,19 @@ create table rectangles
     geom geometry
 );
 
+-- 19. SQL-запросы
 -- Insert
 -- 1. Добавьте следующие прямоугольники с описнием
+insert into rectangles(name, geom) values
+('A', 'POLYGON((0 0, 30 0, 30 20, 0 20, 0 0))'),
+('B', 'POLYGON((5 5, 10 5, 10 10, 5 10, 5 5))'),
+('C', 'POLYGON((20 -5, 35 -5, 35 5, 20 5, 20 -5))'),
+('D', 'POLYGON((0 -15, 5 -15, 5 -10, 0 -10, 0 -15))'),
+('E', 'POLYGON((20 -20, 30 -20, 30 -15, 20 -15, 20 -20))');
+
+-- Select
+-- Сформировать список всех прямоугольников
+select name, ST_AsText(geom) from rectangles;
 /*
 ---------------------(30, 20)
 | A _______(10, 10)  |
@@ -41,16 +54,6 @@ _____(5,-10)
 -----         | E |
               -----
 */
-insert into rectangles(name, geom) values
-('A', 'POLYGON((0 0, 30 0, 30 20, 0 20, 0 0))'),
-('B', 'POLYGON((5 5, 10 5, 10 10, 5 10, 5 5))'),
-('C', 'POLYGON((20 -5, 35 -5, 35 5, 20 5, 20 -5))'),
-('D', 'POLYGON((0 -15, 5 -15, 5 -10, 0 -10, 0 -15))'),
-('E', 'POLYGON((20 -20, 30 -20, 30 -15, 20 -15, 20 -20))');
-
--- Select
--- Сформировать список всех прямоугольников
-select name, ST_AsText(geom) from rectangles;
 
 -- Сформировать список всех пересекающихся
 -- Make sure to avoid comparing the a polygon to itself. Also avoid comparing a pair of polygon twice
@@ -60,6 +63,8 @@ from rectangles r1, rectangles r2
 where r1.name < r2.name
     and st_intersects(r1.geom, r2.geom)
     and not st_contains(r1.geom, r2.geom);
+
+select * from intersections;
 
 -- Сформировать список всех прямоугольнико лежащих внутри первого
 select r.name

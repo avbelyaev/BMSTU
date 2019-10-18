@@ -101,7 +101,7 @@ CREATE TABLE tit_out
     sNOTE                varchar(255),
     sTCHF                varchar(200)    -- tech field. в 20 символов не помещается ничего -> 200
 );
-comment on table tit_out is 'Расход';
+comment on table tit_out is 'Расход. ака накладная';
 
 -- - Таблица TIT_IN
 --     1. Первичные ключи объявить автоинкрементальный
@@ -124,7 +124,7 @@ CREATE TABLE tit_in
         FOREIGN KEY (EMP_ID)
         REFERENCES employers (ID_EMP)
 );
-comment on table tit_in is 'Приход';
+comment on table tit_in is 'Приход. ака накладная';
 
 -- - Таблицы NOM_IN
 --     1. Первичные ключи определиться как автоинкрементальный (Serial).
@@ -153,7 +153,7 @@ CREATE TABLE nom_in
         FOREIGN KEY (ID_NOM)
         REFERENCES nomenclatura (ID_DRG)
 );
-comment on table nom_in is 'накладная входящая. ака спецификация';
+comment on table nom_in is 'спецификация входящей накладной';
 
 -- - Таблица NOM_OUT
 --     1. Первичные ключи определиться как автоинкрементальный (Serial)
@@ -182,7 +182,7 @@ CREATE TABLE nom_out
         FOREIGN KEY (ID_NOM)
         REFERENCES nomenclatura (ID_DRG)
 );
-comment on table nom_out is 'накладная исходящая. aka специфкация';
+comment on table nom_out is 'специфкация исходящей накладной';
 
 
 -- - Таблица HEAD
@@ -267,11 +267,12 @@ insert into nom_in(nQUANTITY, ID_TIT, ID_NOM, sTCHF, nQUANT) values
 -- инструкции есть только в номенклатуре
 update nomenclatura
 set sINSTRUCTION = '1 таблетку 2 раза в день'
-where ID_DRG in (1, 3);
+where ID_DRG in (1, 3, 4);
 update nomenclatura
 set sINSTRUCTION = 'размешать с водой, выпить'
 where ID_DRG in (2);
 
+select * from nomenclatura;
 
 --6. Создать функцию для дублирования строки с заданной номенклатурой.
 CREATE OR REPLACE FUNCTION duplicate_nomenclatura(record_id int)
@@ -285,7 +286,7 @@ BEGIN
                    WHERE ID_DRG = %s', record_id);
 END
 $func$ LANGUAGE plpgsql;
--- Select duplicate_nomenclatura(2);
+Select duplicate_nomenclatura(2);
 
 --1. Сформировать список всех работников.
 select SName, SPosition
@@ -317,12 +318,12 @@ left join nomenclatura n on ni.ID_NOM = n.ID_DRG;
 --3. Написать оператор Select который формирует отчет обо всех накладных, не имеющих спецификациии.
 select t.ID_TIT, t.sNOTE
 from tit_in t
-where t.ID_TIT in (select ni.ID_TIT from nom_in ni);
+where t.ID_TIT not in (select ni.ID_TIT from nom_in ni);
 
 --4. Написать оператор Select который формирует отчет обо всех накладных, имеющих спецификацию.
 select t.ID_TIT, t.sNOTE
 from tit_in t
-where t.ID_TIT not in (select ni.ID_TIT from nom_in ni);
+where t.ID_TIT in (select ni.ID_TIT from nom_in ni);
 
 --5. Написать оператор Select который формирует отчет с суммарной стоимостью спецификации.
 -- формируем спецификации для заказа 2
@@ -367,23 +368,28 @@ limit 1;
 
 -- ### Updata (Изменения значения строк)
 -- 1. Изменить отчество в столбец FIO1 в первой записи
+select * from employers;
+
 update employers
 set fio1.family = 'wozniak'
 where ID_EMP = 1;
 
 -- 2. Увеличить цену каждой номенклатуры на десять процентов.
+select * from nom_in;
+
 update nom_in
 set nQUANT = nQUANT * 1.1;
 
 -- 3. Переместить одну номенклатурную единицу из одной товарной накладной в другую.
 -- Товарные накладные выбрать по своему усмотрению.
-select * from nom_in;
+-- перемещение товара между накладными есть смена ID_TIT товара. в качестве товара берем 1ю единицу
 update nom_in
 set ID_TIT = 2
 where ID_CL = 1;
 
 -- 4. Поменять спецификации двух произвольных накладных на внутреннее перемещение.
 select * from nom_in;
+
 update nom_in
 set ID_TIT = 2
 where ID_TIT = 1;
@@ -395,6 +401,7 @@ where ID_TIT = 2;
 
 -- ### Удаление
 -- 1. Удалить товарные накладные с минимальной и максимальной стоимостью спецификации.
+-- === пересоздаем данные ===
 select  * from spec_prices;
 
 delete from tit_in
@@ -410,7 +417,7 @@ where ID_TIT in (
 
 -- восстанавливаем данные (привязываем номенклатуу к другому заказу)
 update nom_in
-set ID_TIT = 2
+set ID_TIT = 1
 WHERE ID_TIT is null;
 
 
@@ -446,6 +453,8 @@ where ID_TIT in (
 
 -- ### 13.Создать функцию
 -- 1. Функцию, которая случайным образом создает требования (aka tit_in).
+select * from tit_in;
+
 CREATE OR REPLACE FUNCTION random_tit_in()
   RETURNS void AS
 $func$
@@ -459,7 +468,12 @@ BEGIN
 END
 $func$ LANGUAGE plpgsql;
 
+-- select random_tit_in();
+
+
 -- 2. Создать функцию, которая увеличивает стоимость номенклатуры на 30 процентов.
+select * from nom_in;
+
 CREATE OR REPLACE FUNCTION increase_nom_in_price_by_30_percent(id int)
   RETURNS void AS
 $func$
@@ -471,6 +485,7 @@ BEGIN
 END
 $func$ LANGUAGE plpgsql;
 
+select increase_nom_in_price_by_30_percent(4);
 
 
 -- ### 14.Создать триггер
@@ -486,7 +501,10 @@ insert into nom_out(ID_TIT, ID_NOM, nPRICE, sTCHF) values
 (2, 3, 240, 'нурофены');
 
 -- Триггер реагирует на удаление строки из TIT_OUT.
--- Он должен удаляющие все проассоциированные с этой строкой строки одной транзакцией.
+-- Он должен удалять все проассоциированные с этой строкой строки одной транзакцией.
+select * from tit_out;
+select * from nom_out;
+
 CREATE OR REPLACE FUNCTION rm_nom_out() RETURNS trigger AS
 $$BEGIN
     delete from nom_out
@@ -500,8 +518,8 @@ create trigger trigger_remove_associated
 before delete on tit_out
 for each row execute procedure rm_nom_out();
 
--- delete from tit_out
--- where id = 2;
+delete from tit_out
+where id = 2;
 
 
 
@@ -509,10 +527,7 @@ for each row execute procedure rm_nom_out();
 -- Before the query is optimized, a rule can either replace the query with a different one or add additional queries.
 -- These are then planned and executed instead of or together with the original query.
 
---подготавливаем данные
-update nom_out
-set tit_id = 1
-where tit_id is null;
+select * from nom_out;
 
 -- Который реагирует на оператор insert с TIT_OUT и удаляющие все проасоциированые с этой строкой строки одной транзакцией.
 -- TODO wtf is that
@@ -541,19 +556,20 @@ CREATE TABLE instruction
 insert into instruction(inst, ins) values
 ('i1', to_tsvector(null)),
 ('i2', to_tsvector(null)),
-('i3', to_tsvector(null));
+('i3', to_tsvector(null)),
+('i4', to_tsvector('Hello Darkness my old friend')),
+('i5', to_tsvector('I''ve come to talk with you again'));
 
-select *
-from instruction;
+select * from instruction;
 
 -- максимальный вес джокера
-UPDATE instruction SET ins =
-    setweight(to_tsvector('JOKER'), 'A')
+UPDATE instruction
+SET ins = setweight(to_tsvector('JOKER'), 'A')
 where inst = 'i1';
 
 -- большой вес джокера
-UPDATE instruction SET ins =
-setweight(to_tsvector('JoKeR'), 'B')
+UPDATE instruction
+SET ins = setweight(to_tsvector('JoKeR'), 'B')
 where inst = 'i2';
 
 -- минимальный вес джокера, но есть бэтмен
@@ -563,6 +579,10 @@ UPDATE instruction SET ins =
 where inst = 'i3';
 
 -- запрос 'batman & joker' - видим как меняется вес в зависимости от положения бэтмена в строке
+select inst, ins, ts_rank(ins, to_tsquery('joker & batman')) as rank
+from instruction
+order by rank desc;
+
 -- запрос 'batman | joker' - наличие 2х слабых вариантов (D+C) перебило 1 сильный (B)
 select inst, ins, ts_rank(ins, to_tsquery('joker | batman')) as rank
 from instruction

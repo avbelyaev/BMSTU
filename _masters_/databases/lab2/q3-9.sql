@@ -15,7 +15,7 @@ CREATE TABLESPACE myts2 OWNER ics LOCATION '/home/space2';
 
 -- ### 4. Создать БД
 -- 1. Создать БД mydb
-DROP DATABASE IF EXISTS mydb;
+-- DROP DATABASE IF EXISTS mydb;
 CREATE DATABASE mydb
     WITH
     OWNER = ics
@@ -23,7 +23,6 @@ CREATE DATABASE mydb
     TABLESPACE = myts1;
 
 -- 2. Создать БД mytest
-DROP DATABASE IF EXISTS mytest;
 CREATE DATABASE mytest
     WITH
     OWNER = ics
@@ -36,6 +35,7 @@ DROP DATABASE IF EXISTS mytest;
 
 
 -- ### 5. Создать схемы
+-- выбрать либо в pgadmin, либо в datagrip'е конкретную БД с которой буем работать
 -- - 1. myschem1 для mydb1
 CREATE SCHEMA IF NOT EXISTS myschem1;
 
@@ -88,3 +88,8 @@ CREATE DOMAIN mydom AS
 
 -- ### 9. Добавить расширение pg_freespacemap
 CREATE EXTENSION pg_freespacemap;
+
+-- Each heap and index relation, except for hash indexes, has a Free Space Map (FSM)
+-- to keep track of available space in the relation. For example, if the filenode of a relation is 12345,
+-- the FSM is stored in a file called 12345_fsm, in the same directory as the main relation file.
+-- The Free Space Map is organized as a tree of FSM pages
