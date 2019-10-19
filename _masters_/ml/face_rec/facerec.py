@@ -2,9 +2,9 @@ import os
 
 import cv2
 from PIL import Image
-from numpy import asarray, savez_compressed, load, np, expand_dims
+import numpy as np
 from mtcnn.mtcnn import MTCNN
-from tensorflow.python.keras._impl.keras.models import load_model
+from keras.models import load_model
 
 FACES_FILE = 'faces.npz'
 FACES_EMBEDDINGS_FILE = 'faces-embeddings.npz'
@@ -28,7 +28,7 @@ def extract_face(filename: str, required_size=(160, 160)) -> np.ndarray:
     # TODO replace this shit with opencv
     image = Image.fromarray(face)
     image = image.resize(required_size)
-    face_array = asarray(image)
+    face_array = np.asarray(image)
     return face_array
 
 
@@ -53,7 +53,7 @@ def load_dataset(directory: str) -> (list, list):
 
         faces.extend(faces_loaded)
         labels.extend(labels_loaded)
-    return asarray(faces), asarray(labels)
+    return np.asarray(faces), np.asarray(labels)
 
 
 def save_dataset_as_file(filename: str):
@@ -64,7 +64,7 @@ def save_dataset_as_file(filename: str):
     print(f'test faces/labels: {test_faces.shape}, {test_labels.shape}')
 
     # save whatever this fucks saves
-    savez_compressed(filename, train_faces, train_labels, test_faces, test_labels)
+    np.savez_compressed(filename, train_faces, train_labels, test_faces, test_labels)
 
 
 # get the face embedding for one face
@@ -75,14 +75,14 @@ def get_embedding(model, face_pixels):
     mean, std = face_pixels.mean(), face_pixels.std()
     face_pixels = (face_pixels - mean) / std
     # transform face into one sample
-    samples = expand_dims(face_pixels, axis=0)
+    samples = np.expand_dims(face_pixels, axis=0)
     # make prediction to get embedding
     yhat = model.predict(samples)
     return yhat[0]
 
 
 def save_embeddings_as_file():
-    data = load(FACES_FILE)
+    data = np.load(FACES_FILE)
     train_faces, train_labels, test_faces, test_labels = data['arr_0'], data['arr_1'], data['arr_2'], data['arr_3']
     print('Loaded: ', train_faces.shape, train_labels.shape, test_faces.shape, test_labels.shape)
 
@@ -93,17 +93,17 @@ def save_embeddings_as_file():
     for face_pixels in train_faces:
         embedding = get_embedding(model, face_pixels)
         newTrainX.append(embedding)
-    newTrainX = asarray(newTrainX)
+    newTrainX = np.asarray(newTrainX)
     print(newTrainX.shape)
     # convert each face in the test set to an embedding
     newTestX = list()
     for face_pixels in test_faces:
         embedding = get_embedding(model, face_pixels)
         newTestX.append(embedding)
-    newTestX = asarray(newTestX)
+    newTestX = np.asarray(newTestX)
     print(newTestX.shape)
 
-    savez_compressed(FACES_EMBEDDINGS_FILE, newTrainX, train_labels, newTestX, test_labels)
+    np.savez_compressed(FACES_EMBEDDINGS_FILE, newTrainX, train_labels, newTestX, test_labels)
 
 
 def main():
