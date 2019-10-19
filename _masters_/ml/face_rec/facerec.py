@@ -2,14 +2,18 @@ import os
 
 import cv2
 from PIL import Image
-from numpy import asarray, savez_compressed, load
+from numpy import asarray, savez_compressed, load, np, expand_dims
 from mtcnn.mtcnn import MTCNN
-
+from tensorflow.python.keras._impl.keras.models import load_model
 
 FACES_FILE = 'faces.npz'
+FACES_EMBEDDINGS_FILE = 'faces-embeddings.npz'
 
 
-def extract_face(filename: str, required_size=(160, 160)):
+# https://machinelearningmastery.com/how-to-develop-a-face-recognition-system-using-facenet-in-keras-and-an-svm-classifier/
+
+
+def extract_face(filename: str, required_size=(160, 160)) -> np.ndarray:
     img = cv2.cvtColor(cv2.imread(filename), cv2.COLOR_BGR2RGB)
 
     detector = MTCNN()
@@ -28,7 +32,7 @@ def extract_face(filename: str, required_size=(160, 160)):
     return face_array
 
 
-def load_faces(directory):
+def load_faces(directory: str) -> list:
     faces = []
     for filename in os.listdir(directory):
         face = extract_face(directory + filename)
@@ -36,7 +40,7 @@ def load_faces(directory):
     return faces
 
 
-def load_dataset(directory):
+def load_dataset(directory: str) -> (list, list):
     faces, labels = [], []
     for subdir in os.listdir(directory):
         path = directory + subdir + '/'
@@ -51,7 +55,8 @@ def load_dataset(directory):
         labels.extend(labels_loaded)
     return asarray(faces), asarray(labels)
 
-def save_dataset_as_file(filename:str):
+
+def save_dataset_as_file(filename: str):
     train_faces, train_labels = load_dataset('data/train/')
     print(f'train faces/labels: {train_faces.shape}, {train_labels.shape}')
 
@@ -62,20 +67,55 @@ def save_dataset_as_file(filename:str):
     savez_compressed(filename, train_faces, train_labels, test_faces, test_labels)
 
 
-def clusterize_from_file(filename: str):
-    data = load(filename)
+# get the face embedding for one face
+def get_embedding(model, face_pixels):
+    # scale pixel values
+    face_pixels = face_pixels.astype('float32')
+    # standardize pixel values across channels (global)
+    mean, std = face_pixels.mean(), face_pixels.std()
+    face_pixels = (face_pixels - mean) / std
+    # transform face into one sample
+    samples = expand_dims(face_pixels, axis=0)
+    # make prediction to get embedding
+    yhat = model.predict(samples)
+    return yhat[0]
+
+
+def save_embeddings_as_file():
+    data = load(FACES_FILE)
     train_faces, train_labels, test_faces, test_labels = data['arr_0'], data['arr_1'], data['arr_2'], data['arr_3']
     print('Loaded: ', train_faces.shape, train_labels.shape, test_faces.shape, test_labels.shape)
+
+    # load MOAR of that shit!
+    model = load_model('facenet_keras.h5')
+
+    newTrainX = list()
+    for face_pixels in train_faces:
+        embedding = get_embedding(model, face_pixels)
+        newTrainX.append(embedding)
+    newTrainX = asarray(newTrainX)
+    print(newTrainX.shape)
+    # convert each face in the test set to an embedding
+    newTestX = list()
+    for face_pixels in test_faces:
+        embedding = get_embedding(model, face_pixels)
+        newTestX.append(embedding)
+    newTestX = asarray(newTestX)
+    print(newTestX.shape)
+
+    savez_compressed(FACES_EMBEDDINGS_FILE, newTrainX, train_labels, newTestX, test_labels)
 
 
 def main():
     file_with_extracted_faces_already_exists = os.path.isfile(FACES_FILE)
     if file_with_extracted_faces_already_exists:
-        clusterize_from_file(FACES_FILE)
+        save_embeddings_as_file()
+
         return
     else:
         save_dataset_as_file(FACES_FILE)
-    clusterize_from_file(FACES_FILE)
+
+    save_embeddings_as_file()
 
 
 if __name__ == '__main__':
