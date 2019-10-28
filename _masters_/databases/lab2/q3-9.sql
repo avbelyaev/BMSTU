@@ -3,13 +3,17 @@
 -- ### 3. Создать tablespace
 -- 1. Создать tablespace “myts1” (myts2) в директории MyDB1 (MyDB2) с пользователем postgres
 /*
-- в контейнере:
+- в контейнере выпоняем:
 mkdir -p /home/space1 && chown postgres /home/space1
 mkdir -p /home/space2 && chown postgres /home/space2
+
+- подчключаемся datagrip'ом, pgadmin'ом, либо PSQL'ем.
+в случае psql:
+psql --username ics --password ics --dbname ics
 */
 -- - по отдельности запускаем:
-CREATE TABLESPACE myts1 OWNER ics LOCATION '/home/space1';
-CREATE TABLESPACE myts2 OWNER ics LOCATION '/home/space2';
+create tablespace myts1 owner ics location '/home/space1';
+create tablespace myts2 owner ics location '/home/space2';
 
 
 
@@ -35,22 +39,34 @@ DROP DATABASE IF EXISTS mytest;
 
 
 -- ### 5. Создать схемы
--- выбрать либо в pgadmin, либо в datagrip'е конкретную БД с которой буем работать
+/*
+выбрать в pgadmin или datagrip'е конкретную БД с которой буем работать.
+в случае PSQL:
+psql --username ics --password ics --dbname mydb
+ */
 -- - 1. myschem1 для mydb1
 CREATE SCHEMA IF NOT EXISTS myschem1;
 
--- - 1. myschem2 для mydb1
+-- - 2. myschem2 для mydb1
 CREATE SCHEMA IF NOT EXISTS myschem2;
 
 -- - 3. Определитб текущую схему
 select current_schema();
+--  current_schema
+-- ----------------
+--  public
 -- или
 SHOW search_path;
+--    search_path
+-- -----------------
+--  "$user", public
 
 -- - 4. Сделать myschem2 текущей
 SET search_path TO myschem2;
 SHOW search_path;
-
+--  search_path
+-- -------------
+--  myschem2
 
 
 -- ### 6. Создать последовательность
@@ -77,9 +93,8 @@ CREATE TYPE fio AS
 
 -- ### 8. Создать домен
 /*
-In PostgreSQL, a domain is a data type with optional constraints e.g.,
-NOT NULL, CHECK etc. A domain has a unique name within the schema scope.
-Domains are useful for centralizing management of fields with the common constraints.
+Домен - опциональный констрейнт с уникальным именем в рамках схемы.
+Нужны для централизованного управления атрбутами
 */
 CREATE DOMAIN mydom AS
     INT CHECK (value < 7);
@@ -88,8 +103,10 @@ CREATE DOMAIN mydom AS
 
 -- ### 9. Добавить расширение pg_freespacemap
 CREATE EXTENSION pg_freespacemap;
-
--- Each heap and index relation, except for hash indexes, has a Free Space Map (FSM)
--- to keep track of available space in the relation. For example, if the filenode of a relation is 12345,
--- the FSM is stored in a file called 12345_fsm, in the same directory as the main relation file.
--- The Free Space Map is organized as a tree of FSM pages
+/*
+ каждый объект (например, таблица или индекс, кроме хеш-индекса) имеет Free Space Map (FSM)
+ для отслеживания свободного места (таблицы).
+ если filenode (файл, хранящий, наприме, таблицу) = 12345,
+ то FSM хранится в файле 12345_fsm в той же директории, что и основной файл.
+ FSM оргназиован как дерево FSM-страниц
+ */
