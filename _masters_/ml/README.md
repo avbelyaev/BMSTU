@@ -2,6 +2,8 @@
 
 Prerequisites
 
+- make user python 3.7 is used. ml shit doesnt support 3.8
+
 - set up and activate venv
 ```bash
 source venv/bin/activate
