@@ -6,8 +6,9 @@ Prerequisites
 
 - set up and activate venv
 ```bash
+python3 -m venv ./venv
 source venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt 
 ```
 
 
@@ -86,7 +87,6 @@ python contours.py
 - Tenengrad (TENG)
 - Normalized Gray Level Variance (GLVN)
 
-возвращаемое значение – метка изображение размыто или нет. 
 Для региона указать координаты размытого региона на изображении.
 
 ```bash
