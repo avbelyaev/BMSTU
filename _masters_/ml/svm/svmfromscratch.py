@@ -1,9 +1,9 @@
-import math
+from math import pi, sin, cos, sqrt
 from copy import deepcopy
+from datetime import datetime
 
 import numpy as np
 import matplotlib.pyplot as plt
-from sympy import sin, cos, pi
 
 from _masters_.ml.square_contours.contours import Point
 
@@ -15,7 +15,7 @@ CLAZZ_2 = 'b'
 
 
 def dist_between(p1: Point, p2: Point) -> float:
-    return math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2)
+    return sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2)
 
 
 def find_middle_point(p1: Point, p2: Point) -> Point:
@@ -42,40 +42,42 @@ def ys(points: list) -> list:
 
 class Vector:
     def __init__(self, pt_from: Point, pt_to: Point):
-        self.pt_from = deepcopy(pt_from)
-        self.pt_to = deepcopy(pt_to)
+        self.a = deepcopy(pt_from)
+        self.b = deepcopy(pt_to)
 
     def rotate(self, angle_degree: float):
         radians = angle_degree / 180 * pi
 
-        self.pt_to.x -= self.pt_from.x
-        self.pt_to.y -= self.pt_from.y
+        # translate to 0
+        self.b.x -= self.a.x
+        self.b.y -= self.a.y
 
-        s = sin(radians)
-        c = cos(radians)
-        xnew = self.pt_to.x * cos(radians) - self.pt_to.y * sin(radians)
-        ynew = self.pt_to.x * sin(radians) + self.pt_to.y * cos(radians)
+        # roatate
+        print(f'rota: {datetime.now()}')
+        xnew = self.b.x * cos(radians) - self.b.y * sin(radians)
+        ynew = self.b.x * sin(radians) + self.b.y * cos(radians)
 
-        self.pt_to.x = xnew + self.pt_from.x
-        self.pt_to.y = ynew + self.pt_from.y
+        # translate back
+        self.b.x = xnew + self.a.x
+        self.b.y = ynew + self.a.y
 
     @property
     def len(self):
-        return dist_between(self.pt_from, self.pt_to)
+        return dist_between(self.a, self.b)
 
     @property
     def xs(self) -> list:
-        return [self.pt_from.x, self.pt_to.x]
+        return [self.a.x, self.b.x]
 
     @property
     def ys(self) -> list:
-        return [self.pt_from.y, self.pt_to.y]
+        return [self.a.y, self.b.y]
 
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
-        return f'{self.pt_from} -> {self.pt_to}'
+        return f'{self.a} -> {self.b}'
 
 
 class SVMFromScratch:
@@ -98,24 +100,41 @@ class SVMFromScratch:
         middle_vect = Vector(closest_1, closest_2)
 
         transcluster_12 = Vector(closest_1, closest_2)
-        transcluster_12.rotate(90)
         transcluster_21 = Vector(closest_2, closest_1)
-        transcluster_21.rotate(90)
-
-        # draw clusters
-        plt.scatter(xs(data[CLAZZ_1]), ys(data[CLAZZ_1]))
-        plt.scatter(xs(data[CLAZZ_2]), ys(data[CLAZZ_2]))
-
-        # draw vectors
-        plt.scatter([middle.x], [middle.y])
-        plt.plot(middle_vect.xs, middle_vect.ys, 'g--')
-        plt.plot(transcluster_12.xs, transcluster_12.ys, 'r--')
-        plt.plot(transcluster_21.xs, transcluster_21.ys, 'r--')
-
-        plt.axis('scaled')
-        plt.savefig(IMG_NAME)
 
 
+        step = 10
+        angle = 0
+        while angle < 360:
+            angle += step
+            print(angle)
+
+            print(f'calc: {datetime.now()}')
+            transcluster_12.rotate(step)
+            transcluster_21.rotate(step)
+
+            print(f' clr: {datetime.now()}')
+            plt.clf()
+            plt.cla()
+            # draw clusters
+            print(f'draw: {datetime.now()}')
+            plt.scatter(xs(data[CLAZZ_1]), ys(data[CLAZZ_1]))
+            plt.scatter(xs(data[CLAZZ_2]), ys(data[CLAZZ_2]))
+
+            # draw vectors
+            plt.scatter([middle.x], [middle.y])
+            plt.plot(middle_vect.xs, middle_vect.ys, 'g--')
+            plt.plot(transcluster_12.xs, transcluster_12.ys, 'r--')
+            plt.plot(transcluster_21.xs, transcluster_21.ys, 'r--')
+
+            print(f'rndr: {datetime.now()}')
+            # plt.savefig(IMG_NAME)
+            # time.sleep(0.3)
+            plt.pause(0.05)
+            plt.draw()
+            print(f'done: {datetime.now()}')
+
+        # plt.show()
 
 
 def main():
