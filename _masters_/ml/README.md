@@ -104,9 +104,11 @@ python blur.py
 ![r](blur/glvn-res.png)
 
 
-## Support Vector Machine (SVM). lab 3
+## Support Vector Machine (SVM from scratch). lab 3
 
-Реализовать алгоритм обучения с учителем - метод опорных векторов самостоятельно. (svm from scratch)
+Реализовать алгоритм обучения с учителем - метод опорных векторов самостоятельно. 
+
+Была реализована наивная, учебная версия как proof-of-concept, т.к. что SVM работает, только для линейно разделимых наборов данных.
 
 #### Usage
 ```python
