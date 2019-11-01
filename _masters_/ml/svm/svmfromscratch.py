@@ -72,10 +72,6 @@ class SVMFromScratch:
     def __init__(self):
         self.data = None
 
-    def is_correctly_classified(self, v1: Vector, v2: Vector) -> bool:
-        # self.data = 1
-        return False
-
     def fit(self, data: dict):
         distances = []
         for pt1 in data[CLAZZ_1]:
@@ -91,8 +87,8 @@ class SVMFromScratch:
         middle = find_middle_point(closest_1, closest_2)
         middle_vect = Vector(closest_1, closest_2)
 
-        transcluster_12 = Vector(closest_1, closest_2)
-        transcluster_21 = Vector(closest_2, closest_1)
+        svm1 = Vector(closest_1, closest_2)
+        svm2 = Vector(closest_2, closest_1)
 
         most_distant_support_vectors = {
             'vect1': None,
@@ -104,20 +100,23 @@ class SVMFromScratch:
         angle = 0
         while angle < FULL_DEGREE:
             angle += step
-            print(angle)
+            print(f'angle: {angle}')
 
-            transcluster_12.rotate(step)
-            transcluster_21.rotate(step)
-            curr_dist = Vector.dist_between_parallel(transcluster_12, transcluster_21)
-            print(f'line 1: {transcluster_12} ... {transcluster_12.linear_function}')
-            print(f'line 2: {transcluster_21} ... {transcluster_21.linear_function}')
-            print(f'dist between: {curr_dist}')
+            svm1.rotate(step)
+            svm2.rotate(step)
+            curr_dist = Vector.dist_between_parallel(svm1, svm2)
+            print(f' dist: {curr_dist}')
 
-            if self.is_correctly_classified(transcluster_12, transcluster_21) \
-                    and curr_dist > most_distant_support_vectors['dist']:
+            c1_correct = SVMFromScratch.is_correctly_classified(svm1, data[CLAZZ_1])
+            c2_correct = SVMFromScratch.is_correctly_classified(svm2, data[CLAZZ_2])
+            print(f'c1: {c1_correct}, c2: {c2_correct}')
+
+            if curr_dist > most_distant_support_vectors['dist'] \
+                    and SVMFromScratch.is_correctly_classified(svm1, data[CLAZZ_1]) \
+                    and SVMFromScratch.is_correctly_classified(svm2, data[CLAZZ_2]):
                 most_distant_support_vectors = {
-                    'vect1': deepcopy(transcluster_12),
-                    'vect2': deepcopy(transcluster_21),
+                    'vect1': deepcopy(svm1),
+                    'vect2': deepcopy(svm2),
                     'dist': curr_dist
                 }
 
@@ -132,14 +131,26 @@ class SVMFromScratch:
 
             # draw support vectors
             plt.plot(middle_vect.xs, middle_vect.ys, 'g--')
-            plt.plot(transcluster_12.xs, transcluster_12.ys, 'r--')
-            plt.plot(transcluster_21.xs, transcluster_21.ys, 'r--')
+            plt.plot(svm1.xs, svm1.ys, 'r--')
+            plt.plot(svm2.xs, svm2.ys, 'r--')
 
-            plt.pause(0.5)
+            plt.pause(2)
             plt.draw()
 
         print(most_distant_support_vectors)
         plt.show()
+
+
+    @staticmethod
+    def is_correctly_classified(vect: Vector, points: list) -> bool:
+        signs = []
+        for p in points:
+            # https://stackoverflow.com/a/3461533/4504720
+            sign = (vect.b.x - vect.a.x) * (p.y - vect.a.y) - (vect.b.y - vect.a.y) * (p.x - vect.a.x)
+            signs.append(sign)
+        # проверяем что все точки по одну строну от прямой (т.е. либо все > 0, либо все < 0)
+        # та точка, через которую проходит опорный вектор дает 0 => ослабляем до >= 0 (или <= 0)
+        return all(sign >= 0 for sign in signs) or all(sign <= 0 for sign in signs)
 
 
 def find_middle_point(p1: Point, p2: Point) -> Point:
