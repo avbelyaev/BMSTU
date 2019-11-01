@@ -41,6 +41,13 @@ class Vector:
             'c': (self.a.x * self.b.y) - (self.b.x * self.a.y)
         }
 
+    @property
+    def linear_function_str(self) -> str:
+        """in form of: a*x + b*y + c"""
+        return f"{int(self.linear_function['a'])}*x " \
+               f"+ {int(self.linear_function['b'])}*y " \
+               f"+ {int(self.linear_function['c'])}"
+
     @staticmethod
     def dist_between_parallel(v1: 'Vector', v2: 'Vector') -> float:
         linear1 = v1.linear_function
@@ -72,9 +79,14 @@ class SVMFromScratch:
     def __init__(self):
         self.data = None
         self.svm1, self.svm2 = None, None
+        self.middle = None
         self.border = None
+        self.best_margin = -9999  # расст между кластерами
 
     def fit(self, data: dict):
+        self.data = data
+
+        # find distances from points of cluster 1 to points of cluster 2
         distances = []
         for pt1 in data[CLAZZ_1]:
             for pt2 in data[CLAZZ_2]:
@@ -84,22 +96,18 @@ class SVMFromScratch:
                     'dist': dist_between_points(pt1, pt2)
                 })
 
+        # find closest one
         distances.sort(key=lambda it: it['dist'])
         closest_1, closest_2 = distances[0][CLAZZ_1], distances[0][CLAZZ_2]
-        middle = find_middle_point(closest_1, closest_2)
-        middle_vect1 = Vector(middle, closest_1)
-        middle_vect2 = Vector(middle, closest_2)
 
+        # find middle point between clusters and place 'border'-like vector there (2 vectors actually)
+        self.middle = find_middle_point(closest_1, closest_2)
+        middle_vect1 = Vector(self.middle, closest_1)
+        middle_vect2 = Vector(self.middle, closest_2)
+
+        # prepare support vectors
         svm1 = Vector(closest_1, closest_2)
         svm2 = Vector(closest_2, closest_1)
-
-        # TODO replace with self.
-        most_distant_svms = {
-            'vect1': None,
-            'vect2': None,
-            'margin': -9999,
-            'border': (None, None)  # два вектора, образующие границу разделения между support-векторами
-        }
 
         step_degree = 10
         angle_degree = 0
@@ -107,6 +115,7 @@ class SVMFromScratch:
             angle_degree += step_degree
             print(f'angle: {angle_degree}')
 
+            # rotate all vectors simultaneously
             svm1.rotate(step_degree)
             svm2.rotate(step_degree)
             middle_vect1.rotate(step_degree)
@@ -121,67 +130,76 @@ class SVMFromScratch:
             print(f'  class 2 correct: {class_2_correctly_classified}')
 
             # find maximal margin
-            if curr_margin > most_distant_svms['margin'] \
+            if curr_margin > self.best_margin \
                     and class_1_correctly_classified \
                     and class_2_correctly_classified:
-                most_distant_svms = {
-                    'vect1': deepcopy(svm1),
-                    'vect2': deepcopy(svm2),
-                    'margin': curr_margin,
-                    'border': (deepcopy(middle_vect1), deepcopy(middle_vect2))
-                }
+                self.best_margin = curr_margin
+                self.svm1 = deepcopy(svm1)
+                self.svm2 = deepcopy(svm2)
+                self.border = Vector(middle_vect1.b, middle_vect2.b)
 
             # clear canvas
             plt.clf()
             plt.cla()
 
             # draw clusters and mid point
-            plt.scatter(xs(data[CLAZZ_1]), ys(data[CLAZZ_1]))
-            plt.scatter(xs(data[CLAZZ_2]), ys(data[CLAZZ_2]))
-            plt.scatter([middle.x], [middle.y])
+            plt.scatter(xs(self.data[CLAZZ_1]), ys(self.data[CLAZZ_1]))
+            plt.scatter(xs(self.data[CLAZZ_2]), ys(self.data[CLAZZ_2]))
+            plt.scatter([self.middle.x], [self.middle.y])
 
-            # draw support vectors
+            # draw SVMs and border
             plt.plot(svm1.xs, svm1.ys, 'r--')
             plt.plot(svm2.xs, svm2.ys, 'r--')
-
-            # draw border
             plt.plot(middle_vect1.xs, middle_vect1.ys, 'g--')
             plt.plot(middle_vect2.xs, middle_vect2.ys, 'g--')
 
             plt.pause(0.05)
             plt.draw()
 
+        if self.svm1 is None or self.svm2 is None:
+            raise ValueError('clusters are not linearly separable!')
+
         # clear canvas
         plt.clf()
         plt.cla()
 
-        # draw clusters
-        plt.scatter(xs(data[CLAZZ_1]), ys(data[CLAZZ_1]))
-        plt.scatter(xs(data[CLAZZ_2]), ys(data[CLAZZ_2]))
+        # draw clusters and mid point
+        plt.scatter(xs(self.data[CLAZZ_1]), ys(self.data[CLAZZ_1]))
+        plt.scatter(xs(self.data[CLAZZ_2]), ys(self.data[CLAZZ_2]))
 
-        # draw SVMs
-        self.svm1 = most_distant_svms['vect1']
+        # draw SVMs and border
         plt.plot(self.svm1.xs, self.svm1.ys, 'r--')
-        self.svm2 = most_distant_svms['vect2']
         plt.plot(self.svm2.xs, self.svm2.ys, 'r--')
-
-        # draw border
-        border1 = most_distant_svms['border'][0]
-        border2 = most_distant_svms['border'][1]
-        self.border = Vector(border1.b, border2.b)
         plt.plot(self.border.xs, self.border.ys, 'g--')
-
         plt.savefig('dots.png')
+
+        print('\ndata has been fitted!')
+        print(f'best margin: {self.best_margin}')
+        print(f'supp vect 1: {self.svm1.linear_function_str}')
+        print(f'supp vect 2: {self.svm2.linear_function_str}')
 
 
     def predict(self, point: Point) -> str:
         line = self.border
         signed_val = (line.b.x - line.a.x) * (point.y - line.a.y) - \
                      (line.b.y - line.a.y) * (point.x - line.a.x)
-        if signed_val >= 0:
-            return CLAZZ_1
-        else:
-            return CLAZZ_2
+        clazz = CLAZZ_1 if signed_val >= 0 else CLAZZ_2
+        print(f'point {point} prediced to class "{clazz}"')
+        return clazz
+
+    def draw_data(self):
+        plt.clf()
+        plt.cla()
+
+        # draw clusters and mid point
+        plt.scatter(xs(self.data[CLAZZ_1]), ys(self.data[CLAZZ_1]))
+        plt.scatter(xs(self.data[CLAZZ_2]), ys(self.data[CLAZZ_2]))
+        plt.scatter([self.middle.x], [self.middle.y])
+
+        # draw SVMs and border
+        plt.plot(self.svm1.xs, self.svm1.ys, 'r--')
+        plt.plot(self.svm2.xs, self.svm2.ys, 'r--')
+        plt.plot(self.border.xs, self.border.ys, 'g--')
 
     @staticmethod
     def is_correctly_classified(vect: Vector, points: list) -> bool:
@@ -254,8 +272,7 @@ def main():
     svm.fit(labeled_data)
 
     # predict new data
-    clazz = svm.predict(Point(70, 40))
-    print(f'new point is labeled as of class "{clazz}"')
+    svm.predict(Point(70, 40))
 
     plt.show()
 
