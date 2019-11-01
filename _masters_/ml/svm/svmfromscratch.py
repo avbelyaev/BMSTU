@@ -1,43 +1,14 @@
 from math import pi, sin, cos, sqrt
 from copy import deepcopy
-from datetime import datetime
-
-import numpy as np
 import matplotlib.pyplot as plt
 
 from _masters_.ml.square_contours.contours import Point
-
-IMG_NAME = 'dots.png'
 
 DATASET_SIZE = 5
 CLAZZ_1 = 'a'
 CLAZZ_2 = 'b'
 
-
-def dist_between(p1: Point, p2: Point) -> float:
-    return sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2)
-
-
-def find_middle_point(p1: Point, p2: Point) -> Point:
-    if p1.x < p2.x:
-        mid_x = p1.x + (p2.x - p1.x) // 2
-    else:
-        mid_x = p2.x + (p1.x - p2.x) // 2
-
-    if p1.y < p2.y:
-        mid_y = p1.y + (p2.y - p1.y) // 2
-    else:
-        mid_y = p2.y + (p1.y - p2.y) // 2
-
-    return Point(mid_x, mid_y)
-
-
-def xs(points: list) -> list:
-    return [p.x for p in points]
-
-
-def ys(points: list) -> list:
-    return [p.y for p in points]
+FULL_DEGREE = 360
 
 
 class Vector:
@@ -52,8 +23,7 @@ class Vector:
         self.b.x -= self.a.x
         self.b.y -= self.a.y
 
-        # roatate
-        print(f'rota: {datetime.now()}')
+        # rotate
         xnew = self.b.x * cos(radians) - self.b.y * sin(radians)
         ynew = self.b.x * sin(radians) + self.b.y * cos(radians)
 
@@ -62,8 +32,26 @@ class Vector:
         self.b.y = ynew + self.a.y
 
     @property
-    def len(self):
-        return dist_between(self.a, self.b)
+    def linear_function(self) -> dict:
+        """in form of: a*x + b*y + c = 0"""
+        # (y1 – y2)x + (x2 – x1)y + (x1y2 – x2y1) = 0
+        return {
+            'a': self.a.y - self.b.y,
+            'b': self.b.x - self.a.x,
+            'c': (self.a.x * self.b.y) - (self.b.x * self.a.y)
+        }
+
+    @staticmethod
+    def dist_between_parallel(v1: 'Vector', v2: 'Vector') -> float:
+        linear1 = v1.linear_function
+        linear2 = v2.linear_function
+        # assert a1 == a2, b1 == b2
+        denominator = sqrt(linear1['a'] ** 2 + linear1['b'] ** 2)
+        return abs(linear1['c'] + linear2['c']) // denominator
+
+    @property
+    def len(self) -> float:
+        return dist_between_points(self.a, self.b)
 
     @property
     def xs(self) -> list:
@@ -84,6 +72,10 @@ class SVMFromScratch:
     def __init__(self):
         self.data = None
 
+    def is_correctly_classified(self, v1: Vector, v2: Vector) -> bool:
+        # self.data = 1
+        return False
+
     def fit(self, data: dict):
         distances = []
         for pt1 in data[CLAZZ_1]:
@@ -91,7 +83,7 @@ class SVMFromScratch:
                 distances.append({
                     CLAZZ_1: pt1,
                     CLAZZ_2: pt2,
-                    'dist': dist_between(pt1, pt2)
+                    'dist': dist_between_points(pt1, pt2)
                 })
 
         distances.sort(key=lambda it: it['dist'])
@@ -102,39 +94,78 @@ class SVMFromScratch:
         transcluster_12 = Vector(closest_1, closest_2)
         transcluster_21 = Vector(closest_2, closest_1)
 
+        most_distant_support_vectors = {
+            'vect1': None,
+            'vect2': None,
+            'dist': -9999
+        }
 
         step = 10
         angle = 0
-        while angle < 360:
+        while angle < FULL_DEGREE:
             angle += step
             print(angle)
 
-            print(f'calc: {datetime.now()}')
             transcluster_12.rotate(step)
             transcluster_21.rotate(step)
+            curr_dist = Vector.dist_between_parallel(transcluster_12, transcluster_21)
+            print(f'line 1: {transcluster_12} ... {transcluster_12.linear_function}')
+            print(f'line 2: {transcluster_21} ... {transcluster_21.linear_function}')
+            print(f'dist between: {curr_dist}')
 
-            print(f' clr: {datetime.now()}')
+            if self.is_correctly_classified(transcluster_12, transcluster_21) \
+                    and curr_dist > most_distant_support_vectors['dist']:
+                most_distant_support_vectors = {
+                    'vect1': deepcopy(transcluster_12),
+                    'vect2': deepcopy(transcluster_21),
+                    'dist': curr_dist
+                }
+
+            # clear canvas
             plt.clf()
             plt.cla()
-            # draw clusters
-            print(f'draw: {datetime.now()}')
+
+            # draw clusters and mid point
             plt.scatter(xs(data[CLAZZ_1]), ys(data[CLAZZ_1]))
             plt.scatter(xs(data[CLAZZ_2]), ys(data[CLAZZ_2]))
-
-            # draw vectors
             plt.scatter([middle.x], [middle.y])
+
+            # draw support vectors
             plt.plot(middle_vect.xs, middle_vect.ys, 'g--')
             plt.plot(transcluster_12.xs, transcluster_12.ys, 'r--')
             plt.plot(transcluster_21.xs, transcluster_21.ys, 'r--')
 
-            print(f'rndr: {datetime.now()}')
-            # plt.savefig(IMG_NAME)
-            # time.sleep(0.3)
-            plt.pause(0.05)
+            plt.pause(0.5)
             plt.draw()
-            print(f'done: {datetime.now()}')
 
-        # plt.show()
+        print(most_distant_support_vectors)
+        plt.show()
+
+
+def find_middle_point(p1: Point, p2: Point) -> Point:
+    if p1.x < p2.x:
+        mid_x = p1.x + (p2.x - p1.x) // 2
+    else:
+        mid_x = p2.x + (p1.x - p2.x) // 2
+
+    if p1.y < p2.y:
+        mid_y = p1.y + (p2.y - p1.y) // 2
+    else:
+        mid_y = p2.y + (p1.y - p2.y) // 2
+
+    return Point(mid_x, mid_y)
+
+
+def dist_between_points(p1: Point, p2: Point) -> float:
+    return sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2)
+
+
+def xs(points: list) -> list:
+    return [p.x for p in points]
+
+
+def ys(points: list) -> list:
+    return [p.y for p in points]
 
 
 def main():
@@ -142,37 +173,40 @@ def main():
     center2 = (80, 20)
     distance = 20
 
+    import numpy as np
     x1 = np.random.uniform(low=center1[0], high=center1[0] + distance, size=(DATASET_SIZE,))
     y1 = np.random.normal(loc=center1[1], scale=distance, size=(DATASET_SIZE,))
 
     x2 = np.random.uniform(center2[0], center2[0] + distance, size=(DATASET_SIZE,))
     y2 = np.random.normal(center2[1], distance, size=(DATASET_SIZE,))
 
-    # plt.scatter(x1, y1)
-    # plt.scatter(x2, y2)
-    # plt.show()
+    # convert from numpy into normal points
+    marked_up_data = {
+        CLAZZ_1: [],
+        CLAZZ_2: []
+    }
 
-    clazz1_points = []
     for i in range(DATASET_SIZE):
         x = x1[i]
         y = y1[i]
-        clazz1_points.append(Point(x, y))
+        marked_up_data[CLAZZ_1].append(Point(x, y))
 
-    clazz2_points = []
     for i in range(DATASET_SIZE):
         x = x2[i]
         y = y2[i]
-        clazz2_points.append(Point(x, y))
-
-    marked_up_data = {
-        CLAZZ_1: clazz1_points,
-        CLAZZ_2: clazz2_points
-    }
+        marked_up_data[CLAZZ_2].append(Point(x, y))
 
     svm = SVMFromScratch()
     svm.fit(marked_up_data)
-    # svm.visualize()
 
 
 if __name__ == '__main__':
     main()
+
+    # v = Vector(Point(2,1), Point(5,7))
+    # print(v.linear_function)
+    # linear1 = {'a': -31.247440394778728, 'b': 9.66091408069402, 'c': 964.2556114111776}
+    # linear2 = {'a': 31.24744039477874, 'b': -9.660914080694027, 'c': -2033.9914035109805}
+    # # assert a1 == a2, b1 == b2
+    # denominator = sqrt(linear1['a'] ** 2 + linear1['b'] ** 2)
+    # print(abs(linear1['c'] + linear2['c']) / denominator)
