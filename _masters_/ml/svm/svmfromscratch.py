@@ -71,6 +71,8 @@ class Vector:
 class SVMFromScratch:
     def __init__(self):
         self.data = None
+        self.svm1, self.svm2 = None, None
+        self.border = None
 
     def fit(self, data: dict):
         distances = []
@@ -85,39 +87,48 @@ class SVMFromScratch:
         distances.sort(key=lambda it: it['dist'])
         closest_1, closest_2 = distances[0][CLAZZ_1], distances[0][CLAZZ_2]
         middle = find_middle_point(closest_1, closest_2)
-        middle_vect = Vector(closest_1, closest_2)
+        middle_vect1 = Vector(middle, closest_1)
+        middle_vect2 = Vector(middle, closest_2)
 
         svm1 = Vector(closest_1, closest_2)
         svm2 = Vector(closest_2, closest_1)
 
-        most_distant_support_vectors = {
+        # TODO replace with self.
+        most_distant_svms = {
             'vect1': None,
             'vect2': None,
-            'dist': -9999
+            'margin': -9999,
+            'border': (None, None)  # два вектора, образующие границу разделения между support-векторами
         }
 
-        step = 10
-        angle = 0
-        while angle < FULL_DEGREE:
-            angle += step
-            print(f'angle: {angle}')
+        step_degree = 10
+        angle_degree = 0
+        while angle_degree < FULL_DEGREE:
+            angle_degree += step_degree
+            print(f'angle: {angle_degree}')
 
-            svm1.rotate(step)
-            svm2.rotate(step)
-            curr_dist = Vector.dist_between_parallel(svm1, svm2)
-            print(f' dist: {curr_dist}')
+            svm1.rotate(step_degree)
+            svm2.rotate(step_degree)
+            middle_vect1.rotate(step_degree)
+            middle_vect2.rotate(step_degree)
 
-            c1_correct = SVMFromScratch.is_correctly_classified(svm1, data[CLAZZ_1])
-            c2_correct = SVMFromScratch.is_correctly_classified(svm2, data[CLAZZ_2])
-            print(f'c1: {c1_correct}, c2: {c2_correct}')
+            curr_margin = Vector.dist_between_parallel(svm1, svm2)
+            print(f'  dist: {curr_margin}')
 
-            if curr_dist > most_distant_support_vectors['dist'] \
-                    and SVMFromScratch.is_correctly_classified(svm1, data[CLAZZ_1]) \
-                    and SVMFromScratch.is_correctly_classified(svm2, data[CLAZZ_2]):
-                most_distant_support_vectors = {
+            class_1_correctly_classified = SVMFromScratch.is_correctly_classified(svm1, data[CLAZZ_1])
+            class_2_correctly_classified = SVMFromScratch.is_correctly_classified(svm2, data[CLAZZ_2])
+            print(f'  class 1 correct: {class_1_correctly_classified}')
+            print(f'  class 2 correct: {class_2_correctly_classified}')
+
+            # find maximal margin
+            if curr_margin > most_distant_svms['margin'] \
+                    and class_1_correctly_classified \
+                    and class_2_correctly_classified:
+                most_distant_svms = {
                     'vect1': deepcopy(svm1),
                     'vect2': deepcopy(svm2),
-                    'dist': curr_dist
+                    'margin': curr_margin,
+                    'border': (deepcopy(middle_vect1), deepcopy(middle_vect2))
                 }
 
             # clear canvas
@@ -130,24 +141,55 @@ class SVMFromScratch:
             plt.scatter([middle.x], [middle.y])
 
             # draw support vectors
-            plt.plot(middle_vect.xs, middle_vect.ys, 'g--')
             plt.plot(svm1.xs, svm1.ys, 'r--')
             plt.plot(svm2.xs, svm2.ys, 'r--')
 
-            plt.pause(2)
+            # draw border
+            plt.plot(middle_vect1.xs, middle_vect1.ys, 'g--')
+            plt.plot(middle_vect2.xs, middle_vect2.ys, 'g--')
+
+            plt.pause(0.05)
             plt.draw()
 
-        print(most_distant_support_vectors)
-        plt.show()
+        # clear canvas
+        plt.clf()
+        plt.cla()
 
+        # draw clusters
+        plt.scatter(xs(data[CLAZZ_1]), ys(data[CLAZZ_1]))
+        plt.scatter(xs(data[CLAZZ_2]), ys(data[CLAZZ_2]))
+
+        # draw SVMs
+        self.svm1 = most_distant_svms['vect1']
+        plt.plot(self.svm1.xs, self.svm1.ys, 'r--')
+        self.svm2 = most_distant_svms['vect2']
+        plt.plot(self.svm2.xs, self.svm2.ys, 'r--')
+
+        # draw border
+        border1 = most_distant_svms['border'][0]
+        border2 = most_distant_svms['border'][1]
+        self.border = Vector(border1.b, border2.b)
+        plt.plot(self.border.xs, self.border.ys, 'g--')
+
+        plt.savefig('dots.png')
+
+
+    def predict(self, point: Point) -> str:
+        line = self.border
+        signed_val = (line.b.x - line.a.x) * (point.y - line.a.y) - \
+                     (line.b.y - line.a.y) * (point.x - line.a.x)
+        if signed_val >= 0:
+            return CLAZZ_1
+        else:
+            return CLAZZ_2
 
     @staticmethod
     def is_correctly_classified(vect: Vector, points: list) -> bool:
         signs = []
         for p in points:
             # https://stackoverflow.com/a/3461533/4504720
-            sign = (vect.b.x - vect.a.x) * (p.y - vect.a.y) - (vect.b.y - vect.a.y) * (p.x - vect.a.x)
-            signs.append(sign)
+            signed_val = (vect.b.x - vect.a.x) * (p.y - vect.a.y) - (vect.b.y - vect.a.y) * (p.x - vect.a.x)
+            signs.append(signed_val)
         # проверяем что все точки по одну строну от прямой (т.е. либо все > 0, либо все < 0)
         # та точка, через которую проходит опорный вектор дает 0 => ослабляем до >= 0 (или <= 0)
         return all(sign >= 0 for sign in signs) or all(sign <= 0 for sign in signs)
@@ -192,7 +234,7 @@ def main():
     y2 = np.random.normal(center2[1], distance, size=(DATASET_SIZE,))
 
     # convert from numpy into normal points
-    marked_up_data = {
+    labeled_data = {
         CLAZZ_1: [],
         CLAZZ_2: []
     }
@@ -200,24 +242,23 @@ def main():
     for i in range(DATASET_SIZE):
         x = x1[i]
         y = y1[i]
-        marked_up_data[CLAZZ_1].append(Point(x, y))
+        labeled_data[CLAZZ_1].append(Point(x, y))
 
     for i in range(DATASET_SIZE):
         x = x2[i]
         y = y2[i]
-        marked_up_data[CLAZZ_2].append(Point(x, y))
+        labeled_data[CLAZZ_2].append(Point(x, y))
 
+    # fit to labeled data
     svm = SVMFromScratch()
-    svm.fit(marked_up_data)
+    svm.fit(labeled_data)
+
+    # predict new data
+    clazz = svm.predict(Point(70, 40))
+    print(f'new point is labeled as of class "{clazz}"')
+
+    plt.show()
 
 
 if __name__ == '__main__':
     main()
-
-    # v = Vector(Point(2,1), Point(5,7))
-    # print(v.linear_function)
-    # linear1 = {'a': -31.247440394778728, 'b': 9.66091408069402, 'c': 964.2556114111776}
-    # linear2 = {'a': 31.24744039477874, 'b': -9.660914080694027, 'c': -2033.9914035109805}
-    # # assert a1 == a2, b1 == b2
-    # denominator = sqrt(linear1['a'] ** 2 + linear1['b'] ** 2)
-    # print(abs(linear1['c'] + linear2['c']) / denominator)
