@@ -108,6 +108,22 @@ python blur.py
 
 Реализовать алгоритм обучения с учителем - метод опорных векторов самостоятельно. (svm from scratch)
 
+#### Usage
+```python
+# fit to data
+labeled_data = {
+    'a': [Point(10, 20), Point(13, 37), Point(14, 48)],
+    'b': [Point(-5, 16), Point(12, 90), Point(40, 30)]
+}
+
+svm = SVMFromScratch()
+svm.fit(labeled_data)
+
+# predict new data
+predicted_clazz = svm.predict(Point(70, 40))
+```
+
+
 #### In action
 
 ![o](svm/dots.gif)
