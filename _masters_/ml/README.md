@@ -102,3 +102,16 @@ python blur.py
 
 ![r](blur/teng-res.png)
 ![r](blur/glvn-res.png)
+
+
+## Support Vector Machine (SVM). lab 3
+
+Реализовать алгоритм обучения с учителем - метод опорных векторов самостоятельно. (svm from scratch)
+
+#### In action
+
+![o](svm/dots.gif)
+
+#### Result
+
+![o](svm/dots.png)
