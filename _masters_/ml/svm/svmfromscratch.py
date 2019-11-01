@@ -1,6 +1,7 @@
 from math import pi, sin, cos, sqrt
 from copy import deepcopy
 import matplotlib.pyplot as plt
+# not a single fcking numpy
 
 from _masters_.ml.square_contours.contours import Point
 
@@ -81,7 +82,8 @@ class SVMFromScratch:
         self.svm1, self.svm2 = None, None
         self.middle = None
         self.border = None
-        self.best_margin = -9999  # расст между кластерами
+        # the goal is to maximize this dist between support vectors
+        self.max_margin = -9999
 
     def fit(self, data: dict):
         self.data = data
@@ -130,10 +132,10 @@ class SVMFromScratch:
             print(f'  class 2 correct: {class_2_correctly_classified}')
 
             # find maximal margin
-            if curr_margin > self.best_margin \
+            if curr_margin > self.max_margin \
                     and class_1_correctly_classified \
                     and class_2_correctly_classified:
-                self.best_margin = curr_margin
+                self.max_margin = curr_margin
                 self.svm1 = deepcopy(svm1)
                 self.svm2 = deepcopy(svm2)
                 self.border = Vector(middle_vect1.b, middle_vect2.b)
@@ -174,7 +176,7 @@ class SVMFromScratch:
         plt.savefig('dots.png')
 
         print('\ndata has been fitted!')
-        print(f'best margin: {self.best_margin}')
+        print(f'best margin: {self.max_margin}')
         print(f'supp vect 1: {self.svm1.linear_function_str}')
         print(f'supp vect 2: {self.svm2.linear_function_str}')
 
