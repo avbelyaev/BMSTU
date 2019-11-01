@@ -1,7 +1,9 @@
 import math
+from copy import deepcopy
 
 import numpy as np
 import matplotlib.pyplot as plt
+from sympy import sin, cos, pi
 
 from _masters_.ml.square_contours.contours import Point
 
@@ -16,7 +18,7 @@ def dist_between(p1: Point, p2: Point) -> float:
     return math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2)
 
 
-def middle_point(p1: Point, p2: Point) -> Point:
+def find_middle_point(p1: Point, p2: Point) -> Point:
     if p1.x < p2.x:
         mid_x = p1.x + (p2.x - p1.x) // 2
     else:
@@ -40,16 +42,19 @@ def ys(points: list) -> list:
 
 class Vector:
     def __init__(self, pt_from: Point, pt_to: Point):
-        self.pt_from = pt_from
-        self.pt_to = pt_to
+        self.pt_from = deepcopy(pt_from)
+        self.pt_to = deepcopy(pt_to)
 
     def rotate(self, angle_degree: float):
-        radians = angle_degree / 180 * math.pi
+        radians = angle_degree / 180 * pi
+
         self.pt_to.x -= self.pt_from.x
         self.pt_to.y -= self.pt_from.y
 
-        xnew = self.pt_to.x * math.cos(radians) - self.pt_to.y * math.sin(radians)
-        ynew = self.pt_to.x * math.sin(radians) + self.pt_to.y * math.cos(radians)
+        s = sin(radians)
+        c = cos(radians)
+        xnew = self.pt_to.x * cos(radians) - self.pt_to.y * sin(radians)
+        ynew = self.pt_to.x * sin(radians) + self.pt_to.y * cos(radians)
 
         self.pt_to.x = xnew + self.pt_from.x
         self.pt_to.y = ynew + self.pt_from.y
@@ -89,17 +94,27 @@ class SVMFromScratch:
 
         distances.sort(key=lambda it: it['dist'])
         closest_1, closest_2 = distances[0][CLAZZ_1], distances[0][CLAZZ_2]
-        middle = middle_point(closest_1, closest_2)
-        transcluster_vect = Vector(closest_1, closest_2)
+        middle = find_middle_point(closest_1, closest_2)
+        middle_vect = Vector(closest_1, closest_2)
 
+        transcluster_12 = Vector(closest_1, closest_2)
+        transcluster_12.rotate(90)
+        transcluster_21 = Vector(closest_2, closest_1)
+        transcluster_21.rotate(90)
+
+        # draw clusters
         plt.scatter(xs(data[CLAZZ_1]), ys(data[CLAZZ_1]))
         plt.scatter(xs(data[CLAZZ_2]), ys(data[CLAZZ_2]))
-        plt.scatter([middle.x], [middle.y])
-        plt.plot(transcluster_vect.xs, transcluster_vect.ys, '--')
-        transcluster_vect.rotate(90)
-        plt.plot(transcluster_vect.xs, transcluster_vect.ys, 'r--')
 
+        # draw vectors
+        plt.scatter([middle.x], [middle.y])
+        plt.plot(middle_vect.xs, middle_vect.ys, 'g--')
+        plt.plot(transcluster_12.xs, transcluster_12.ys, 'r--')
+        plt.plot(transcluster_21.xs, transcluster_21.ys, 'r--')
+
+        plt.axis('scaled')
         plt.savefig(IMG_NAME)
+
 
 
 
