@@ -169,8 +169,10 @@ def main():
     plt.plot(s.xs, s.filtered_signal(signal=s.noisy_signal()), c='green')
 
     # find optimal alphas, lambdas
-    s.optimize_alphas()
     s.optimize_lambdas()
+    print(s.lambda_weight)
+    s.optimize_alphas()
+    print(s.central_alpha)
 
     # plot with optimal alphas
     plt.subplot(414)

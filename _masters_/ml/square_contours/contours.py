@@ -10,8 +10,7 @@ SOURCE_IMG_PATH = 'squares.jpg'
 RESULT_IMG_PATH = 'res.png'
 
 COLORS = ['white', 'green', 'purple', 'black', 'blue',
-          'red', 'yellow', 'orange', 'brown', 'cyan',
-          'Fuchsia', 'LawnGreen']
+          'red', 'yellow', 'orange', 'brown', 'cyan']
 
 
 class Point:
