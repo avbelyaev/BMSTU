@@ -25,11 +25,13 @@ class Simplexx:
         """
         in form of AX<=B
         :param a: A
-        :param b: B
-        :param lambdas: aka C
+        :param b: B in form of 2d array
+        :param lambdas: aka C, in form of 2d array
         :param condition: min or max
         """
         assert condition in [Condition.MIN, Condition.MAX]
+        assert lambdas.shape[0] == 1, "lambdas should be of 2d array"
+        assert b.shape[1] == 1, "B should be of 2d array"
         self.matr = a
         self.b = b
         self.lambdas = lambdas
@@ -85,7 +87,7 @@ class Simplexx:
     # иначе вернем строку с отрицательным элементом
     def find_negative_free_var_row(self) -> Optional[int]:
         i = 0
-        while i < self._get_rows() - 1:  # пропускаем подвал таблицы
+        while i < self.rows - 1:  # пропускаем подвал таблицы
             if self.tbl[i, 0] < 0:
                 return i
             i += 1
@@ -95,7 +97,7 @@ class Simplexx:
     def find_first_negative_col(self, row: int) -> Optional[int]:
         #  пропускаем 0й столбец со свободными переменными
         i = 1
-        while i < self._get_cols():
+        while i < self.cols:
             if self.tbl[row, i] < 0:
                 return i
             i += 1
@@ -103,8 +105,8 @@ class Simplexx:
 
     # поиск резрешающего столбца
     def find_determining_column(self) -> Optional[int]:
-        lambdas_row = self.tbl[self._get_rows() - 1:]
-        labdas_row_len = self._get_cols()
+        lambdas_row = self.tbl[self.rows - 1:]
+        labdas_row_len = self.cols
         i = 1  # пропускаем столбец свободных сленов
         while i < labdas_row_len:
             if float(lambdas_row[0, i]) > 0:
@@ -117,11 +119,11 @@ class Simplexx:
     # поиск резрешающей строки
     def find_determining_row(self, determining_col: int) -> Optional[int]:
         # Найдем минимальное положительное отношение элемента свободных членов
-        # si0 к соответствующем эле- менту в разрешающем столбце
+        # si0 к соответствующем элементу в разрешающем столбце
         min_relation = 999999
         determining_row = None
         i = 0
-        while i < self._get_rows() - 1:
+        while i < self.rows - 1:
             if 0 == self.tbl[i, determining_col]:
                 i += 1
                 continue
@@ -145,7 +147,7 @@ class Simplexx:
 
         # меняем разрешающую строку, кроме разрешающего элемента
         col = 0
-        while col < self._get_cols():
+        while col < self.cols:
             if col == k:
                 col += 1
                 continue
@@ -155,7 +157,7 @@ class Simplexx:
 
         # обновляем разрешающий столбец
         row = 0
-        while row < self._get_rows():
+        while row < self.rows:
             if row == r:
                 row += 1
                 continue
@@ -165,9 +167,9 @@ class Simplexx:
 
         # обновляем все остальное
         row = 0
-        while row < self._get_rows():
+        while row < self.rows:
             col = 0
-            while col < self._get_cols():
+            while col < self.cols:
                 if row == r or col == k:
                     col += 1
                     continue
@@ -252,8 +254,7 @@ class Simplexx:
     def get_target_func(self) -> float:
         # так как все свобоные переменные = 0,
         # то ответ лежит в первой клетке подвала таблицы
-        rows = self.tbl.shape[0]
-        f_value = round(self.tbl[rows - 1, 0], ndigits=2)
+        f_value = round(self.tbl[self.rows - 1, 0], ndigits=3)
 
         #  см заметики при составлении таблицы
         if self.condition is Condition.MIN:
@@ -274,10 +275,12 @@ class Simplexx:
             j += 1
         return res
 
-    def _get_rows(self) -> int:
+    @property
+    def rows(self) -> int:
         return self.tbl.shape[0]
 
-    def _get_cols(self) -> int:
+    @property
+    def cols(self) -> int:
         return self.tbl.shape[1]
 
     def __repr__(self):
