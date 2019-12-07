@@ -133,3 +133,14 @@ predicted_clazz = svm.predict(Point(70, 40))
 #### Result
 
 ![o](svm/dots.png)
+
+
+## Face recognition
+
+- Classic, with no use of neural networks and other ds shit - only "Haar cascades"
+- Neural - with use of all that shit
+
+All that stuff was created in colab so i am a data-scientist 
+and dont care about code quality and replayability :)
+
+![o](face_rec_classic/p1.png)
