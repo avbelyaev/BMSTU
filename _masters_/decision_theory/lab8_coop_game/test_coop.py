@@ -26,6 +26,7 @@ class TestCooperativeGame(unittest.TestCase):
         for player_id in players:
             share = game.solve_sheply_for_player(player_id)
             print('Player', player_id, share)
+
             self.assertAlmostEqual(1.333, share)  # 4/3
 
 
