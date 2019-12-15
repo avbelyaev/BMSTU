@@ -20,23 +20,24 @@ COALITION_PROFIT = {
     frozenset([2, 3, 4]): 9,
     frozenset([1, 2, 3, 4]): 12
 }
+
 COALITION_PROFIT_AFTER_CHANGE = {
     frozenset([]): 0,
-    frozenset([1]): 1,
+    frozenset([1]): 3,
     frozenset([2]): 1,
-    frozenset([3]): 1,
-    frozenset([4]): 1,
-    frozenset([1, 2]): 2,
-    frozenset([1, 3]): 2,
-    frozenset([1, 4]): 2,
-    frozenset([2, 3]): 2,
-    frozenset([2, 4]): 2,
-    frozenset([3, 4]): 2,
-    frozenset([1, 2, 3]): 3,
-    frozenset([1, 2, 4]): 3,
-    frozenset([1, 3, 4]): 3,
-    frozenset([2, 3, 4]): 3,
-    frozenset([1, 2, 3, 4]): 4
+    frozenset([3]): 2,
+    frozenset([4]): 4,
+    frozenset([1, 2]): 4,
+    frozenset([1, 3]): 5,
+    frozenset([1, 4]): 8,
+    frozenset([2, 3]): 3,
+    frozenset([2, 4]): 5,
+    frozenset([3, 4]): 6,
+    frozenset([1, 2, 3]): 7,
+    frozenset([1, 2, 4]): 10,
+    frozenset([1, 3, 4]): 11,
+    frozenset([2, 3, 4]): 8,
+    frozenset([1, 2, 3, 4]): 13
 }
 PLAYERS = [1, 2, 3, 4]
 
@@ -71,18 +72,18 @@ class CooperativeGame:
 
     # супераддитивность
     def is_super_additive(self) -> bool:
-        for i in self.players:
-            for j in self.players:
-                if i != j:
-                    profit_as_coalition = self.profit[frozenset([i, j])]
-                    profit_i = self.profit[frozenset([i])]
-                    profit_j = self.profit[frozenset([j])]
+        for i in self.coalitions:
+            for j in self.coalitions:
+                if {} == i.intersection(j):
+                    profit_ij = self.profit[i.union(j)]
+                    profit_i = self.profit[i]
+                    profit_j = self.profit[j]
                     # сумма выгод по отдельности не больше выгоды при объединении
-                    if (profit_i + profit_j) > profit_as_coalition:
+                    if (profit_i + profit_j) > profit_ij:
                         print(f'выгода {i}: {profit_i}')
                         print(f'выгода {j}: {profit_j}')
-                        print(f'выгода ({i} & {j}): {profit_as_coalition}')
-                        print(f'{profit_i} + {profit_j} > {profit_as_coalition}')
+                        print(f'выгода ({i} & {j}): {profit_ij}')
+                        print(f'{profit_i} + {profit_j} > {profit_ij}')
                         return False
 
         individual_profits = 0
@@ -92,30 +93,21 @@ class CooperativeGame:
         print('Выгода тотальной коалиции:', self.total_coalition_profit)
         if self.total_coalition_profit < individual_profits:
             return False
-
-        # TODO как это работает для N=4 ( на стр 129 описано для N=3)
-        # for i in self.players:
-        #     for j in self.players:
-        #         for k in self.players:
-        #             for m in self.players:
-        #                 if 4 == len({i, j, k, m}):
-        #                     coalition_profit = self.profit[frozenset([i, j, k])]
-        #                     profit_m = self.profit[frozenset([m])]
-        #                     if self.total_coalition_profit != (coalition_profit + profit_m):
-        #                         print(f'выгода ({i} & {j} & {k}) + ({m}): {coalition_profit} + {profit_m} '
-        #                               f'меньше выгоды тотальной коалиции')
-        #                         return False
         return True
 
     # выпуклость
     def is_convex(self) -> bool:
-        for i in self.players:
-            for j in self.players:
-                union_ij = frozenset({i}.union({j}))
-                intersection_ij = frozenset({i}.intersection({j}))
-                profit_i = self.profit[frozenset([i])]
-                profit_j = self.profit[frozenset([j])]
+        for i in self.coalitions:
+            for j in self.coalitions:
+                union_ij = i.union(j)
+                intersection_ij = i.intersection(j)
+                profit_i = self.profit[i]
+                profit_j = self.profit[j]
                 if (self.profit[union_ij] + self.profit[intersection_ij]) < (profit_i + profit_j):
+                    print(f'Коалиция 1: {i}, коалиция 2: {j}')
+                    print(f'Объединение: {union_ij}, пересечение: {intersection_ij}')
+                    print(f'({self.profit[union_ij]} + {self.profit[intersection_ij]}) '
+                          f'< ({profit_i} + {profit_j})')
                     return False
         return True
 
@@ -131,7 +123,11 @@ def all_combinations(items: list) -> 'List[frozenset]':
 
 def main():
     game = CooperativeGame(COALITION_PROFIT, PLAYERS)
-    # TODO assert not additive?
+    print('Игра суперадитивная:', game.is_super_additive())
+    print('Игра выпуклая:', game.is_convex())
+
+    print('\n--- меняем условие ---\n')
+    game = CooperativeGame(COALITION_PROFIT_AFTER_CHANGE, PLAYERS)
     print('Игра суперадитивная:', game.is_super_additive())
     print('Игра выпуклая:', game.is_convex())
 
@@ -145,8 +141,6 @@ def main():
 
     print(f'Групповая рационализация:\n'
           f'Сумма долей: {sum(shares)}, Выгода тотальной коалиции: {game.total_coalition_profit}')
-
-    # TODO if no super additive, then change to COALIION_PROFIT_AFTER_CHANGE and repeat same
 
 
 if __name__ == '__main__':

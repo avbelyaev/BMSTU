@@ -21,7 +21,7 @@ class TestCooperativeGame(unittest.TestCase):
         game = CooperativeGame(profits, players)
 
         self.assertTrue(game.is_super_additive())
-        self.assertTrue(game.is_convex())
+        self.assertFalse(game.is_convex())
 
         for player_id in players:
             share = game.solve_sheply_for_player(player_id)
