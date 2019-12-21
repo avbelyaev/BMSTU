@@ -133,3 +133,18 @@ predicted_clazz = svm.predict(Point(70, 40))
 #### Result
 
 ![o](svm/dots.png)
+
+
+
+## Classic CV. lab 4
+
+not yet committed
+
+## Neural Network architecture. lab 5
+
+see `alex/alexarch.py`
+
+## NN-based CV. lab 6
+
+not yet committed
+
