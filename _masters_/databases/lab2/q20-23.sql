@@ -6,7 +6,7 @@ SELECT * FROM information_schema.role_table_grants;
 
 
 -- 21. Авторизация
--- https://postgrespro.ru/docs/postgresql/9.6/sql-createrole
+-- https://www.digitalocean.com/community/tutorials/how-to-use-roles-and-manage-grant-permissions-in-postgresql-on-a-vps--2
 
 -- 1. Задать новую роль (My_role), которая наследует роль sso_role и без пароля.
 -- Для этой роли для БД Apt_Ware разрешить
