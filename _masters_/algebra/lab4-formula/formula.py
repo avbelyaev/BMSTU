@@ -57,7 +57,6 @@ class Formula:
         """ use factory methods instead! """
         self._symbol = sym
         self._args = args
-        self.isLiteral = True if 0 == len(args) else False
         self.canonize()
 
     def canonize(self):
@@ -70,13 +69,26 @@ class Formula:
 
         if isinstance(self._symbol, Impl):                   # инвариант-2: a => b === !a OR b
             self._symbol = Connective.disjOr()
-            self._args[0] = Formula.new(Neg.negate(), [self._args[0]])
+            self._args[0] = -self._args[0]
+
+    def unnegate(self):
+        if self.isNegated:
+            arg = self._args[0]
+            if isinstance(arg, Formula):
+                self._symbol = arg._symbol
+                self._args = arg._args
 
     @property
     def isConjunctionAnd(self) -> bool: return isinstance(self._symbol, Connective) and self._symbol.neutral
 
     @property
     def isDisjunctionOr(self) -> bool: return isinstance(self._symbol, Connective) and not self._symbol.neutral
+
+    @property
+    def isNegated(self) -> bool: return isinstance(self._symbol, Neg)
+
+    @property
+    def isLiteral(self) -> bool: return True if 0 == len(self._args) else False
 
     def addArgument(self, var: 'Var'):
         self._args.append(Formula.literal(var))
@@ -120,7 +132,11 @@ class Formula:
 
         return Formula.new(Connective.disjOr(), [self, other])
 
-    def __neg__(self): return Formula.new(Neg.negate(), [self])
+    def __neg__(self):
+        if self.isNegated:
+            return self._args[0]
+        return Formula.new(Neg.negate(), [self])
+
     def __rshift__(self, other): return Formula.new(Impl.imply(), [self, other])
     def __mod__(self, other): return Formula.new(Eq.equivalent(), [self, other])
 
@@ -131,10 +147,10 @@ class Formula:
             return f'{self._symbol}'
 
         left = f'({self._args[0]})'
-        if self._args[0].isLiteral:
+        if isinstance(self._args[0], Formula) and self._args[0].isLiteral:
             left = f'{self._args[0]}'
 
-        if isinstance(self._symbol, Neg):
+        if self.isNegated:
             return f'{self._symbol}{left}'
 
         s = f'{self._symbol}('
@@ -179,9 +195,35 @@ class Var(Symbol):
 
 class Normalizer:
     @staticmethod
-    def toNegationNormalForm(formula: Formula, b: bool) -> Formula:
+    def toNegationNormalForm(formula: Formula, b: bool = False) -> Formula:
         f = copy.deepcopy(formula)
 
+        if f.isLiteral:
+            if b:
+                if f.isNegated:
+                    f.unnegate()
+                else:
+                    f = -f
+            return f
+
+        # Отрицание переносится вниз по синтаксическому дереву
+        if isinstance(f._symbol, Neg):
+            f.unnegate()
+            b = not b
+
+        # Применение законов де Моргана
+        for i, arg in enumerate(f._args):
+            argCopy = copy.deepcopy(arg)
+            f._args[i] = Normalizer.toNegationNormalForm(argCopy, b)
+
+        if f.isConjunctionAnd and b:
+            f._symbol = Connective.disjOr()
+        elif f.isConjunctionAnd and not b:
+            f._symbol = Connective.conjAnd()
+        elif f.isDisjunctionOr and b:
+            f._symbol = Connective.conjAnd()
+        elif f.isDisjunctionOr and not b:
+            f._symbol = Connective.disjOr()
         return f
 
 
@@ -193,17 +235,12 @@ def main():
     e = Var.new('e')
     f = Var.new('f')
 
-    ff = ((a + d + b) * -c) % (d >> e >> f)
-    print(ff)
+    testSort = b * (a * (c * f * (e * d)))
+    print(testSort)
 
-    ff = a * (b * (c * f * (e * d)))
-    print(ff)
-
-    ff = a >> b >> c
-    print(ff)
-
-    ff = a % b
-    print(ff)
+    testDeMorgan = -(a * b)
+    testDeMorgan = Normalizer.toNegationNormalForm(testDeMorgan)
+    print(testDeMorgan)
 
 
 if __name__ == '__main__':
