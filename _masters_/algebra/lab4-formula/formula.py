@@ -65,10 +65,44 @@ class Var(Symbol):
         self.index = nextIndex()  # уникальный номер переменной
 
     @staticmethod
-    def new(value: str) -> 'Formula':
-        return Formula.literal(Var(value))
+    def new(value: str) -> 'Var':
+        return Var(value)
 
     def __repr__(self): return f'{self.value}'
+
+    # пришлось перегружать все операторы для Var, чтобы 2 рядом стоящие (a+b) и (b+c)
+    # состояли из 3х Var'ов, но обе 'b' были независмы
+    def __add__(self, other):
+        right = other
+        if isinstance(other, Var):
+            right = Formula.literal(other)
+        left = Formula.literal(self)
+        return left + right
+
+    def __mul__(self, other):
+        right = other
+        if isinstance(other, Var):
+            right = Formula.literal(other)
+        left = Formula.literal(self)
+        return left * right
+
+    def __rshift__(self, other):
+        right = other
+        if isinstance(other, Var):
+            right = Formula.literal(other)
+        left = Formula.literal(self)
+        return left >> right
+
+    def __mod__(self, other):
+        right = other
+        if isinstance(other, Var):
+            right = Formula.literal(other)
+        left = Formula.literal(self)
+        return left % right
+
+    def __neg__(self):
+        left = Formula.literal(self)
+        return -left
 
 
 class Formula:
@@ -222,18 +256,20 @@ def main():
     y = Var.new('y')
     z = Var.new('z')
 
-    # # уплощение
-    # testSort = b * (-a * (c * f * (e * d)))
-    # print(testSort)
+    # уплощение
+    testSort = b * (-a * (c * f * (e * d)))
+    assert str(testSort) == '*(!a b c d e f)'
+    print(testSort)
 
-    # # де морган
-    # testDeMorgan = -(a * b)
-    # testDeMorgan = Normalizer.toNegationNormalForm(testDeMorgan)
-    # print(testDeMorgan)
+    # де морган
+    testDeMorgan = -(a * b)
+    assert str(testDeMorgan) == '!(*(a b))'
+    testDeMorgan = Normalizer.toNegationNormalForm(testDeMorgan)
+    print(testDeMorgan)
 
     # пример из википедии
     testNNF = -((a >> b) + -(b >> c))
-    # TODO error here - y gets changed via reference
+    assert str(testNNF) == '!(+(+(!a b) !(+(!b c))))'
     testNNF = Normalizer.toNegationNormalForm(testNNF)
     print(testNNF)
 
