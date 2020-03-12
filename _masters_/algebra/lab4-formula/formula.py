@@ -232,7 +232,7 @@ def main():
     # print(testDeMorgan)
 
     # пример из википедии
-    testNNF = -((x >> y) + -(y >> z))
+    testNNF = -((a >> b) + -(b >> c))
     # TODO error here - y gets changed via reference
     testNNF = Normalizer.toNegationNormalForm(testNNF)
     print(testNNF)
